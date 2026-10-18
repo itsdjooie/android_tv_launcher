@@ -9,5 +9,6 @@ data class ContinueWatchingItem(
     val sourcePackage: String,
     val progress: Float, // 0.0 to 1.0
     val remainingTime: String? = null,
-    val plexItem: PlexMediaItem? = null
+    val plexItem: PlexMediaItem? = null,
+    val lastViewedTimestamp: Long = 0L
 )

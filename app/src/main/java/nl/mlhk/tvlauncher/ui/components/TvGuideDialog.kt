@@ -27,16 +27,15 @@ import nl.mlhk.tvlauncher.ui.theme.*
 fun TvGuideDialog(
     channels: List<LiveTvChannel>,
     onSelectChannel: (LiveTvChannel) -> Unit,
-    onOpenNativeGuide: () -> Unit,
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier
-                .width(720.dp)
+                .width(760.dp)
                 .clip(RoundedCornerShape(20.dp))
                 .background(MlhkCardBg)
-                .border(1.dp, MlhkCardBorder, RoundedCornerShape(20.dp))
+                .border(1.dp, MlhkCardBorderGlow, RoundedCornerShape(20.dp))
                 .padding(24.dp)
         ) {
             Column(
@@ -52,18 +51,18 @@ fun TvGuideDialog(
                     Column {
                         Text(
                             text = "TV Gids — Live & Programmering",
-                            style = Typography.titleLarge.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                            style = Typography.titleLarge.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MlhkTextMain)
                         )
                         Text(
-                            text = "Overzicht van Nederlandse zenders op je KPN TV+ Box",
+                            text = "Klik op een zender om direct live te kijken",
                             style = Typography.bodySmall.copy(color = MlhkTextSub)
                         )
                     }
 
                     TvButton(
-                        text = "Volledige KPN Gids",
+                        text = "Sluiten",
                         isPrimary = false,
-                        onClick = onOpenNativeGuide
+                        onClick = onDismiss
                     )
                 }
 
@@ -74,28 +73,30 @@ fun TvGuideDialog(
                         .background(MlhkCardBorder)
                 )
 
-                // Channels List
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(340.dp)
-                ) {
-                    items(channels, key = { it.channelNumber }) { channel ->
-                        ChannelGuideItem(channel = channel, onClick = { onSelectChannel(channel) })
+                if (channels.isEmpty()) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                    ) {
+                        Text(
+                            text = "Geen IPTV-zenders geladen. Koppel je IPTV-provider in Instellingen.",
+                            style = Typography.bodyMedium.copy(color = MlhkTextSub)
+                        )
                     }
-                }
-
-                // Footer
-                Row(
-                    horizontalArrangement = Arrangement.End,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    TvButton(
-                        text = "Sluiten",
-                        isPrimary = true,
-                        onClick = onDismiss
-                    )
+                } else {
+                    // Channels List
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(380.dp)
+                    ) {
+                        items(channels, key = { it.channelNumber }) { channel ->
+                            ChannelGuideItem(channel = channel, onClick = { onSelectChannel(channel) })
+                        }
+                    }
                 }
             }
         }
@@ -127,59 +128,40 @@ private fun ChannelGuideItem(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(40.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(if (isFocused) MlhkPrimary else MlhkCardBg)
+                    .background(if (isFocused) MlhkNeonPink.copy(alpha = 0.3f) else MlhkCardBg)
             ) {
                 Text(
                     text = channel.channelNumber.toString(),
                     style = Typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = if (isFocused) MlhkBackground else MlhkTextMain
+                        color = if (isFocused) MlhkNeonPink else MlhkTextMain,
+                        fontWeight = FontWeight.Bold
                     )
                 )
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = channel.name,
-                        style = Typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                    )
-                    Text(
-                        text = "• ${channel.category}",
-                        style = Typography.bodySmall.copy(color = MlhkNeonCyan)
-                    )
-                }
+            Column {
+                Text(
+                    text = channel.name,
+                    style = Typography.titleMedium.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MlhkTextMain)
+                )
                 Text(
                     text = channel.currentProgram,
-                    style = Typography.bodyMedium.copy(
-                        color = if (isFocused) MlhkTextMain else MlhkTextSub,
-                        fontWeight = FontWeight.Medium
-                    )
+                    style = Typography.bodySmall.copy(color = if (isFocused) MlhkNeonCyan else MlhkTextSub)
                 )
             }
         }
 
-        Column(
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
+        if (channel.timeSlot.isNotBlank()) {
             Text(
                 text = channel.timeSlot,
-                style = Typography.bodySmall.copy(color = MlhkTextMuted)
-            )
-            Text(
-                text = "Hierna: ${channel.nextProgram}",
-                style = Typography.bodySmall.copy(color = MlhkTextSub, fontSize = 11.sp)
+                style = Typography.labelSmall.copy(color = MlhkTextMuted)
             )
         }
     }

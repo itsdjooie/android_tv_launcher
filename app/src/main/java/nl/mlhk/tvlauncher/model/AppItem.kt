@@ -7,6 +7,7 @@ data class AppItem(
     val activityName: String,
     val label: String,
     val icon: Drawable?,
+    val banner: Drawable? = null,
     val isKpn: Boolean = false,
     val isPlex: Boolean = false
 )

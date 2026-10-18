@@ -16,7 +16,8 @@ data class PlexMediaItem(
     val seasonNumber: Int? = null,
     val episodeNumber: Int? = null,
     val rating: Float? = null,
-    val genres: List<String> = emptyList()
+    val genres: List<String> = emptyList(),
+    val lastViewedAt: Long? = null
 ) {
     val progress: Float
         get() {

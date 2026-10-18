@@ -22,28 +22,46 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import kotlinx.coroutines.delay
 import nl.mlhk.tvlauncher.model.PlexMediaItem
 import nl.mlhk.tvlauncher.ui.theme.*
 
 @Composable
 fun HeroBanner(
-    item: PlexMediaItem?,
+    items: List<PlexMediaItem>,
     onPlayClick: (PlexMediaItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var inWatchlist by remember { mutableStateOf(false) }
+
+    val highlights = remember(items) { items.take(5) }
+    var currentIndex by remember { mutableStateOf(0) }
+
+    // Zorg dat de index binnen bereik blijft
+    val validIndex = if (highlights.isNotEmpty()) currentIndex.coerceIn(0, highlights.lastIndex) else 0
+    val currentItem = highlights.getOrNull(validIndex)
+
+    // Automatische rustige rotatie door de 3-5 highlights (elke 9 seconden)
+    LaunchedEffect(highlights.size) {
+        if (highlights.size > 1) {
+            while (true) {
+                delay(9000)
+                currentIndex = (currentIndex + 1) % highlights.size
+            }
+        }
+    }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(340.dp)
     ) {
-        // Backdrop Image with smooth crossfade
-        Crossfade(targetState = item?.artUrl ?: item?.thumbUrl, label = "heroBackdrop") { url ->
+        // Backdrop Image met soepele crossfade (direct uit cache, 0ms laadtijd)
+        Crossfade(targetState = currentItem?.artUrl ?: currentItem?.thumbUrl, label = "heroBackdrop") { url ->
             if (url != null) {
                 AsyncImage(
                     model = url,
-                    contentDescription = item?.title,
+                    contentDescription = currentItem?.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -61,7 +79,7 @@ fun HeroBanner(
             }
         }
 
-        // Multi-layered cinematic gradient vignettes
+        // Multi-layered cinematische vignetgradiënten
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -95,8 +113,8 @@ fun HeroBanner(
                 )
         )
 
-        // Banner Content
-        if (item != null) {
+        // Banner Inhoud
+        if (currentItem != null) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier
@@ -104,13 +122,17 @@ fun HeroBanner(
                     .width(680.dp)
                     .padding(start = 48.dp, top = 20.dp, bottom = 18.dp)
             ) {
-                // Category Tag
+                // Category Tag met Highlight-nummering
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = (item.showTitle ?: item.type).uppercase(),
+                        text = if (highlights.size > 1) {
+                            "HIGHLIGHT ${validIndex + 1} VAN ${highlights.size}"
+                        } else {
+                            (currentItem.showTitle ?: currentItem.type).uppercase()
+                        },
                         style = Typography.labelMedium.copy(
                             color = MlhkNeonPink,
                             fontWeight = FontWeight.Bold,
@@ -118,26 +140,25 @@ fun HeroBanner(
                         )
                     )
                     Text(
-                        text = "• PLEX MEDIA",
-                        style = Typography.bodySmall.copy(color = MlhkNeonCyan, fontSize = 11.sp)
+                        text = "• PLEX SPOTLIGHT",
+                        style = Typography.bodySmall.copy(color = MlhkNeonCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     )
                 }
 
-                // Main Title
+                // Hoofdtitel
                 Text(
-                    text = item.title,
+                    text = currentItem.title,
                     style = Typography.displayLarge.copy(fontSize = 38.sp, fontWeight = FontWeight.Bold),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // High-End Metadata Chips
+                // Metadata Chips
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Rating Badge
-                    val ratingValue = item.rating ?: 8.5f
+                    val ratingValue = currentItem.rating ?: 8.5f
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
@@ -155,7 +176,6 @@ fun HeroBanner(
                         )
                     }
 
-                    // 4K UHD Badge
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
@@ -173,7 +193,6 @@ fun HeroBanner(
                         )
                     }
 
-                    // Age / Content Rating
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
@@ -191,23 +210,23 @@ fun HeroBanner(
                         )
                     }
 
-                    if (item.year != null) {
+                    if (currentItem.year != null) {
                         Text(
-                            text = item.year.toString(),
+                            text = currentItem.year.toString(),
                             style = Typography.bodySmall.copy(color = MlhkTextSub, fontSize = 13.sp)
                         )
                     }
 
-                    if (item.displaySubtitle.isNotBlank() && item.showTitle == null) {
+                    if (currentItem.displaySubtitle.isNotBlank() && currentItem.showTitle == null) {
                         Text(
-                            text = item.displaySubtitle,
+                            text = currentItem.displaySubtitle,
                             style = Typography.bodySmall.copy(color = MlhkTextSub, fontSize = 13.sp)
                         )
                     }
 
-                    if (item.genres.isNotEmpty()) {
+                    if (currentItem.genres.isNotEmpty()) {
                         Text(
-                            text = item.genres.take(2).joinToString(" • "),
+                            text = currentItem.genres.take(2).joinToString(" • "),
                             style = Typography.bodySmall.copy(color = MlhkTextMuted, fontSize = 13.sp)
                         )
                     }
@@ -215,7 +234,7 @@ fun HeroBanner(
 
                 // Synopsis
                 Text(
-                    text = item.summary ?: "Ervaar deze meeslepende titel in bioscoopkwaliteit via je Plex Media Server.",
+                    text = currentItem.summary ?: "Ervaar deze meeslepende titel in bioscoopkwaliteit via je Plex Media Server.",
                     style = Typography.bodyMedium.copy(fontSize = 14.sp, lineHeight = 21.sp),
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis
@@ -223,21 +242,122 @@ fun HeroBanner(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Action CTA Buttons (KPN TV+ Replica)
+                // Actie Knoppen
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     HeroActionButton(
-                        text = if (item.progress > 0) "▶ Verder kijken" else "▶ Nu kijken",
+                        text = if (currentItem.progress > 0) "▶ Verder kijken" else "▶ Nu kijken",
                         isPrimary = true,
-                        onClick = { onPlayClick(item) }
+                        onClick = { onPlayClick(currentItem) }
                     )
 
                     HeroActionButton(
                         text = if (inWatchlist) "✓ In mijn lijst" else "+ Mijn lijst",
                         isPrimary = false,
                         onClick = { inWatchlist = !inWatchlist }
+                    )
+                }
+            }
+
+            // Rechtsonder: 3 tot 5 interactieve Highlight Indicator Pills
+            if (highlights.size > 1) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 48.dp, bottom = 24.dp)
+                ) {
+                    highlights.forEachIndexed { idx, _ ->
+                        val isSelected = idx == validIndex
+                        val pillInteraction = remember { MutableInteractionSource() }
+                        val isPillFocused by pillInteraction.collectIsFocusedAsState()
+
+                        val pillWidth = if (isSelected || isPillFocused) 28.dp else 10.dp
+                        val pillColor = when {
+                            isSelected -> MlhkNeonPink
+                            isPillFocused -> MlhkNeonCyan
+                            else -> MlhkTextMuted.copy(alpha = 0.45f)
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .width(pillWidth)
+                                .height(5.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(pillColor)
+                                .clickable(interactionSource = pillInteraction, indication = null) {
+                                    currentIndex = idx
+                                }
+                                .focusable(interactionSource = pillInteraction)
+                        )
+                    }
+                }
+            }
+        } else {
+            // Elegant MLHK Skeleton Placeholder (pre-allocates 340dp so the interface never jumps!)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(680.dp)
+                    .padding(start = 48.dp, top = 28.dp, bottom = 18.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(160.dp)
+                        .height(18.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(MlhkSurfaceHover.copy(alpha = 0.6f))
+                )
+                Box(
+                    modifier = Modifier
+                        .width(420.dp)
+                        .height(42.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MlhkCardBg)
+                        .border(1.dp, MlhkCardBorder, RoundedCornerShape(10.dp))
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .width(70.dp)
+                            .height(24.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(MlhkSurfaceHover.copy(alpha = 0.6f))
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(80.dp)
+                            .height(24.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(MlhkSurfaceHover.copy(alpha = 0.6f))
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MlhkSurface.copy(alpha = 0.4f))
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .width(140.dp)
+                            .height(44.dp)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(MlhkPrimary.copy(alpha = 0.4f))
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(130.dp)
+                            .height(44.dp)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(MlhkSurfaceHover.copy(alpha = 0.4f))
                     )
                 }
             }

@@ -34,7 +34,7 @@ fun SettingsDialog(
     configManager: ConfigManager,
     plexClient: PlexClient,
     onSaveAndReload: () -> Unit,
-    onReturnToKpn: () -> Unit,
+    onOpenFavorites: () -> Unit,
     onOpenHomeSettings: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -44,6 +44,14 @@ fun SettingsDialog(
     var plexToken by remember { mutableStateOf(configManager.plexToken) }
     var monitoringUrl by remember { mutableStateOf(configManager.monitoringApiUrl) }
     var monitoringKey by remember { mutableStateOf(configManager.monitoringApiKey) }
+
+    var iptvType by remember { mutableStateOf(configManager.iptvType) }
+    var iptvServer by remember { mutableStateOf(configManager.iptvServer) }
+    var iptvUsername by remember { mutableStateOf(configManager.iptvUsername) }
+    var iptvPassword by remember { mutableStateOf(configManager.iptvPassword) }
+    var iptvM3uUrl by remember { mutableStateOf(configManager.iptvM3uUrl) }
+    var iptvEpgUrl by remember { mutableStateOf(configManager.iptvEpgUrl) }
+    var iptvAllowHttp by remember { mutableStateOf(configManager.iptvAllowHttp) }
 
     var pinInfo by remember { mutableStateOf<PlexPinInfo?>(null) }
     var isPollingPin by remember { mutableStateOf(false) }
@@ -58,7 +66,6 @@ fun SettingsDialog(
                 isPollingPin = true
                 pinStatusMessage = "Ga op je mobiel of pc naar https://plex.tv/link en voer code in."
 
-                // Poll every 2 seconds for 10 minutes
                 while (isPollingPin) {
                     delay(2000)
                     val token = plexClient.pollPin(pin.id)
@@ -84,31 +91,34 @@ fun SettingsDialog(
     }) {
         Box(
             modifier = Modifier
-                .width(620.dp)
+                .width(680.dp)
+                .height(600.dp)
                 .clip(RoundedCornerShape(20.dp))
                 .background(MlhkCardBg)
-                .border(1.dp, MlhkCardBorder, RoundedCornerShape(20.dp))
+                .border(1.dp, MlhkCardBorderGlow, RoundedCornerShape(20.dp))
                 .padding(24.dp)
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-                modifier = Modifier.verticalScroll(rememberScrollState())
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
             ) {
                 Text(
                     text = "MLHK TV+ Launcher Instellingen",
-                    style = Typography.titleLarge.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    style = Typography.titleLarge.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MlhkTextMain)
                 )
 
-                // Plex Section
+                // 1. Plex Section
                 Text(
-                    text = "Plex Media Server koppeling",
-                    style = Typography.titleMedium.copy(color = MlhkNeonCyan, fontSize = 14.sp)
+                    text = "PLEX MEDIA SERVER",
+                    style = Typography.titleMedium.copy(color = MlhkNeonPink, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 )
 
                 OutlinedTextField(
                     value = plexHost,
                     onValueChange = { plexHost = it },
-                    label = { Text("Plex Server URL (HTTPS ondersteund)") },
+                    label = { Text("Plex Server URL") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = MlhkTextMain,
@@ -119,7 +129,21 @@ fun SettingsDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // 1-Click Plex PIN linking box
+                OutlinedTextField(
+                    value = plexToken,
+                    onValueChange = { plexToken = it },
+                    label = { Text("X-Plex-Token") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MlhkTextMain,
+                        unfocusedTextColor = MlhkTextSub,
+                        focusedBorderColor = MlhkNeonPink,
+                        unfocusedBorderColor = MlhkCardBorder
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // 1-Click Plex PIN linking
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -140,7 +164,7 @@ fun SettingsDialog(
                                     style = Typography.titleMedium.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                                 )
                                 Text(
-                                    text = "Koppel direct zonder lang token over te typen",
+                                    text = "Koppel direct met een 4-letterige code",
                                     style = Typography.bodySmall.copy(color = MlhkTextMuted)
                                 )
                             }
@@ -158,7 +182,7 @@ fun SettingsDialog(
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(MlhkCardBg)
-                                    .padding(vertical = 12.dp)
+                                    .padding(vertical = 10.dp)
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
@@ -170,9 +194,8 @@ fun SettingsDialog(
                                             fontSize = 28.sp
                                         )
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "Open op telefoon/pc: plex.tv/link",
+                                        text = "Open op telefoon of pc: plex.tv/link",
                                         style = Typography.bodySmall.copy(color = MlhkTextMain, fontWeight = FontWeight.Medium)
                                     )
                                 }
@@ -191,49 +214,165 @@ fun SettingsDialog(
                     }
                 }
 
-                OutlinedTextField(
-                    value = plexToken,
-                    onValueChange = { plexToken = it },
-                    label = { Text("Of handmatig: X-Plex-Token") },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MlhkTextMain,
-                        unfocusedTextColor = MlhkTextSub,
-                        focusedBorderColor = MlhkNeonPink,
-                        unfocusedBorderColor = MlhkCardBorder
-                    ),
-                    modifier = Modifier.fillMaxWidth()
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // 2. IPTV Section
+                Text(
+                    text = "LIVE TV & IPTV INSTELLINGEN (ENKEL ZICHTBAAR NA KOPPELING)",
+                    style = Typography.titleMedium.copy(color = MlhkNeonCyan, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 )
 
-                // Monitoring Section
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    val types = listOf("none" to "Geen (Verborgen)", "xtream" to "Xtream Codes", "m3u" to "M3U Playlist")
+                    types.forEach { (typeKey, typeLabel) ->
+                        val isSelected = iptvType == typeKey
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (isSelected) MlhkNeonPink.copy(alpha = 0.25f) else MlhkSurface)
+                                .border(1.dp, if (isSelected) MlhkNeonPink else MlhkCardBorder, RoundedCornerShape(10.dp))
+                                .clickable { iptvType = typeKey }
+                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = typeLabel,
+                                style = Typography.bodySmall.copy(
+                                    color = if (isSelected) MlhkTextMain else MlhkTextSub,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            )
+                        }
+                    }
+                }
+
+                if (iptvType == "xtream") {
+                    OutlinedTextField(
+                        value = iptvServer,
+                        onValueChange = { iptvServer = it },
+                        label = { Text("Xtream Server URL (bijv. http://provider.com:8080)") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MlhkTextMain,
+                            unfocusedTextColor = MlhkTextSub,
+                            focusedBorderColor = MlhkNeonCyan,
+                            unfocusedBorderColor = MlhkCardBorder
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = iptvUsername,
+                            onValueChange = { iptvUsername = it },
+                            label = { Text("Gebruikersnaam") },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = MlhkTextMain,
+                                unfocusedTextColor = MlhkTextSub,
+                                focusedBorderColor = MlhkNeonCyan,
+                                unfocusedBorderColor = MlhkCardBorder
+                            ),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = iptvPassword,
+                            onValueChange = { iptvPassword = it },
+                            label = { Text("Wachtwoord") },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = MlhkTextMain,
+                                unfocusedTextColor = MlhkTextSub,
+                                focusedBorderColor = MlhkNeonCyan,
+                                unfocusedBorderColor = MlhkCardBorder
+                            ),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                } else if (iptvType == "m3u") {
+                    OutlinedTextField(
+                        value = iptvM3uUrl,
+                        onValueChange = { iptvM3uUrl = it },
+                        label = { Text("M3U Playlist URL (HTTPS / HTTP)") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MlhkTextMain,
+                            unfocusedTextColor = MlhkTextSub,
+                            focusedBorderColor = MlhkNeonCyan,
+                            unfocusedBorderColor = MlhkCardBorder
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = iptvEpgUrl,
+                        onValueChange = { iptvEpgUrl = it },
+                        label = { Text("XMLTV Gids URL (Optioneel)") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MlhkTextMain,
+                            unfocusedTextColor = MlhkTextSub,
+                            focusedBorderColor = MlhkNeonCyan,
+                            unfocusedBorderColor = MlhkCardBorder
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                if (iptvType != "none") {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { iptvAllowHttp = !iptvAllowHttp }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = if (iptvAllowHttp) "[✓] HTTP Streams toestaan" else "[ ] Alleen HTTPS streams",
+                            style = Typography.bodySmall.copy(color = MlhkTextSub)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // 3. Favoriete Apps & Launcher
                 Text(
-                    text = "Centrale Monitoring-API",
-                    style = Typography.titleMedium.copy(color = MlhkNeonCyan, fontSize = 14.sp)
+                    text = "APPS & LAUNCHER BEHEER",
+                    style = Typography.titleMedium.copy(color = MlhkNeonPink, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    TvButton(
+                        text = "Favoriete Apps Kiezen",
+                        isPrimary = false,
+                        onClick = {
+                            onOpenFavorites()
+                            onDismiss()
+                        }
+                    )
+                    TvButton(
+                        text = "Standaard Launcher Instellen",
+                        isPrimary = false,
+                        onClick = onOpenHomeSettings
+                    )
+                }
+
+                // 4. Monitoring Section
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "CENTRALE MONITORING STATUS API",
+                    style = Typography.titleMedium.copy(color = MlhkNeonCyan, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 )
 
                 OutlinedTextField(
                     value = monitoringUrl,
                     onValueChange = { monitoringUrl = it },
-                    label = { Text("Monitoring API URL (bijv. http://192.168.2.25:8080/api/status)") },
+                    label = { Text("Monitoring URL") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = MlhkTextMain,
                         unfocusedTextColor = MlhkTextSub,
-                        focusedBorderColor = MlhkNeonPink,
-                        unfocusedBorderColor = MlhkCardBorder
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = monitoringKey,
-                    onValueChange = { monitoringKey = it },
-                    label = { Text("Monitoring API Token / Key") },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MlhkTextMain,
-                        unfocusedTextColor = MlhkTextSub,
-                        focusedBorderColor = MlhkNeonPink,
+                        focusedBorderColor = MlhkNeonCyan,
                         unfocusedBorderColor = MlhkCardBorder
                     ),
                     modifier = Modifier.fillMaxWidth()
@@ -248,23 +387,21 @@ fun SettingsDialog(
 
                 // Actions
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     TvButton(
-                        text = "Terug naar KPN",
+                        text = "Annuleren",
                         isPrimary = false,
-                        onClick = onReturnToKpn
+                        onClick = {
+                            isPollingPin = false
+                            onDismiss()
+                        }
                     )
+                    Spacer(modifier = Modifier.width(12.dp))
                     TvButton(
-                        text = "Standaard Launcher Wijzigen",
-                        isPrimary = false,
-                        onClick = onOpenHomeSettings
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    TvButton(
-                        text = "Opslaan",
+                        text = "Opslaan & Toepassen",
                         isPrimary = true,
                         onClick = {
                             isPollingPin = false
@@ -272,6 +409,15 @@ fun SettingsDialog(
                             configManager.plexToken = plexToken
                             configManager.monitoringApiUrl = monitoringUrl
                             configManager.monitoringApiKey = monitoringKey
+
+                            configManager.iptvType = iptvType
+                            configManager.iptvServer = iptvServer
+                            configManager.iptvUsername = iptvUsername
+                            configManager.iptvPassword = iptvPassword
+                            configManager.iptvM3uUrl = iptvM3uUrl
+                            configManager.iptvEpgUrl = iptvEpgUrl
+                            configManager.iptvAllowHttp = iptvAllowHttp
+
                             onSaveAndReload()
                             onDismiss()
                         }

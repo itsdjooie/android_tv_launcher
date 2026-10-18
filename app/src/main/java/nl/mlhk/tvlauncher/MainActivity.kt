@@ -1,5 +1,6 @@
 package nl.mlhk.tvlauncher
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
@@ -10,6 +11,7 @@ import nl.mlhk.tvlauncher.data.AppManager
 import nl.mlhk.tvlauncher.data.ConfigManager
 import nl.mlhk.tvlauncher.data.PlexClient
 import nl.mlhk.tvlauncher.data.StatusClient
+import nl.mlhk.tvlauncher.iptv.TvPlayerActivity
 import nl.mlhk.tvlauncher.ui.HomeScreen
 import nl.mlhk.tvlauncher.ui.theme.MLHKTheme
 
@@ -24,7 +26,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         configManager = ConfigManager(this)
-        plexClient = PlexClient(configManager)
+        plexClient = PlexClient(this, configManager)
         statusClient = StatusClient(configManager)
         appManager = AppManager(this, configManager)
 
@@ -43,19 +45,28 @@ class MainActivity : ComponentActivity() {
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         when (keyCode) {
-            // TV Gids button on Sagemcom DIW7022 remote
             KeyEvent.KEYCODE_GUIDE, KeyEvent.KEYCODE_TV_INPUT -> {
-                appManager.launchKpnTv("guide")
-                return true
+                if (configManager.isIptvConfigured) {
+                    val intent = Intent(this, TvPlayerActivity::class.java).apply {
+                        putExtra("channel", 0)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(intent)
+                    return true
+                }
             }
-            // Channel Up / Channel Down buttons
             KeyEvent.KEYCODE_CHANNEL_UP, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
-                appManager.launchKpnTv("channel")
-                return true
+                if (configManager.isIptvConfigured) {
+                    val intent = Intent(this, TvPlayerActivity::class.java).apply {
+                        putExtra("channel", 0)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(intent)
+                    return true
+                }
             }
-            // Return to top when back is pressed instead of closing launcher
             KeyEvent.KEYCODE_BACK -> {
-                // Let user stay on launcher
+                // Keep user safely on launcher
                 return true
             }
         }

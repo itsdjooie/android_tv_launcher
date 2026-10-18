@@ -1,5 +1,6 @@
 package nl.mlhk.tvlauncher.data
 
+import android.content.Context
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
@@ -22,61 +23,127 @@ data class PlexPinInfo(
     val qrUrl: String
 )
 
-class PlexClient(private val configManager: ConfigManager) {
+class PlexClient(
+    private val context: Context,
+    private val configManager: ConfigManager
+) {
 
+    private val mediaCacheManager = MediaCacheManager(context)
     private val httpClient: OkHttpClient = createUnsafeOkHttpClient()
+
+    init {
+        if (!isInitializedFromDisk) {
+            cachedContinueWatching = mediaCacheManager.loadItems("continue_watching")
+            cachedRecentlyAdded = mediaCacheManager.loadItems("recently_added")
+            cachedRecommended = mediaCacheManager.loadItems("recommended")
+            cachedMovies = mediaCacheManager.loadItems("movies")
+            cachedSeries = mediaCacheManager.loadItems("series")
+            cachedHighlights = mediaCacheManager.loadItems("highlights").ifEmpty {
+                cachedRecentlyAdded.take(5).ifEmpty { cachedRecommended.take(5) }
+            }
+            isInitializedFromDisk = true
+        }
+    }
 
     suspend fun getContinueWatching(): List<PlexMediaItem> = withContext(Dispatchers.IO) {
         val host = configManager.plexHost
         val token = configManager.plexToken
 
-        if (host.isBlank() || token.isBlank()) return@withContext emptyList()
+        if (host.isBlank() || token.isBlank()) return@withContext cachedContinueWatching
 
-        val endpoints = listOf("/hubs/continueWatching", "/library/onDeck")
+        val endpoints = listOf(
+            "/hubs/continueWatching?X-Plex-Container-Start=0&X-Plex-Container-Size=10",
+            "/library/onDeck?X-Plex-Container-Start=0&X-Plex-Container-Size=10"
+        )
         for (endpoint in endpoints) {
             val items = fetchItemsFromEndpoint(host, token, endpoint)
-            if (items.isNotEmpty()) return@withContext items
+            if (items.isNotEmpty()) {
+                cachedContinueWatching = items
+                mediaCacheManager.saveItems("continue_watching", items)
+                return@withContext items
+            }
         }
-        emptyList()
+        cachedContinueWatching
     }
 
     suspend fun getRecentlyAdded(): List<PlexMediaItem> = withContext(Dispatchers.IO) {
         val host = configManager.plexHost
         val token = configManager.plexToken
 
-        if (host.isBlank() || token.isBlank()) return@withContext emptyList()
+        if (host.isBlank() || token.isBlank()) return@withContext cachedRecentlyAdded
 
-        val endpoints = listOf("/hubs/recentlyAdded", "/library/recentlyAdded")
+        val endpoints = listOf(
+            "/hubs/recentlyAdded?X-Plex-Container-Start=0&X-Plex-Container-Size=20",
+            "/library/recentlyAdded?X-Plex-Container-Start=0&X-Plex-Container-Size=20"
+        )
         for (endpoint in endpoints) {
             val items = fetchItemsFromEndpoint(host, token, endpoint)
-            if (items.isNotEmpty()) return@withContext items
+            if (items.isNotEmpty()) {
+                cachedRecentlyAdded = items
+                mediaCacheManager.saveItems("recently_added", items)
+                val highlights = items.take(5)
+                if (highlights.isNotEmpty()) {
+                    cachedHighlights = highlights
+                    mediaCacheManager.saveItems("highlights", highlights)
+                }
+                return@withContext items
+            }
         }
-        emptyList()
+        cachedRecentlyAdded
     }
 
     suspend fun getRecommended(): List<PlexMediaItem> = withContext(Dispatchers.IO) {
         val host = configManager.plexHost
         val token = configManager.plexToken
 
-        if (host.isBlank() || token.isBlank()) return@withContext emptyList()
+        if (host.isBlank() || token.isBlank()) return@withContext cachedRecommended
 
-        val items = fetchItemsFromEndpoint(host, token, "/hubs/promoted")
-        if (items.isNotEmpty()) return@withContext items
-        fetchItemsFromEndpoint(host, token, "/library/all")
+        val items = fetchItemsFromEndpoint(host, token, "/hubs/promoted?X-Plex-Container-Start=0&X-Plex-Container-Size=20")
+        if (items.isNotEmpty()) {
+            cachedRecommended = items
+            mediaCacheManager.saveItems("recommended", items)
+            return@withContext items
+        }
+        val all = fetchItemsFromEndpoint(host, token, "/library/all?X-Plex-Container-Start=0&X-Plex-Container-Size=20")
+        if (all.isNotEmpty()) {
+            cachedRecommended = all
+            mediaCacheManager.saveItems("recommended", all)
+        }
+        cachedRecommended
     }
 
     suspend fun getMovies(): List<PlexMediaItem> = withContext(Dispatchers.IO) {
         val host = configManager.plexHost
         val token = configManager.plexToken
-        if (host.isBlank() || token.isBlank()) return@withContext emptyList()
-        fetchItemsFromEndpoint(host, token, "/library/sections/1/all")
+        if (host.isBlank() || token.isBlank()) return@withContext cachedMovies
+        val items = fetchItemsFromEndpoint(host, token, "/library/sections/1/all?X-Plex-Container-Start=0&X-Plex-Container-Size=20")
+        if (items.isNotEmpty()) {
+            cachedMovies = items
+            mediaCacheManager.saveItems("movies", items)
+        }
+        cachedMovies
     }
 
     suspend fun getSeries(): List<PlexMediaItem> = withContext(Dispatchers.IO) {
         val host = configManager.plexHost
         val token = configManager.plexToken
-        if (host.isBlank() || token.isBlank()) return@withContext emptyList()
-        fetchItemsFromEndpoint(host, token, "/library/sections/2/all")
+        if (host.isBlank() || token.isBlank()) return@withContext cachedSeries
+        val items = fetchItemsFromEndpoint(host, token, "/library/sections/2/all?X-Plex-Container-Start=0&X-Plex-Container-Size=20")
+        if (items.isNotEmpty()) {
+            cachedSeries = items
+            mediaCacheManager.saveItems("series", items)
+        }
+        cachedSeries
+    }
+
+    companion object {
+        var cachedHighlights: List<PlexMediaItem> = emptyList()
+        var cachedContinueWatching: List<PlexMediaItem> = emptyList()
+        var cachedRecentlyAdded: List<PlexMediaItem> = emptyList()
+        var cachedRecommended: List<PlexMediaItem> = emptyList()
+        var cachedMovies: List<PlexMediaItem> = emptyList()
+        var cachedSeries: List<PlexMediaItem> = emptyList()
+        var isInitializedFromDisk = false
     }
 
     // Plex.tv PIN Authentication (plex.tv/link)
@@ -208,6 +275,10 @@ class PlexClient(private val configManager: ConfigManager) {
             }
         }
 
+        val lastViewed = obj.get("lastViewedAt")?.asLong
+            ?: obj.get("viewedAt")?.asLong
+            ?: obj.get("updatedAt")?.asLong
+
         return PlexMediaItem(
             id = ratingKey,
             ratingKey = ratingKey,
@@ -224,7 +295,8 @@ class PlexClient(private val configManager: ConfigManager) {
             seasonNumber = seasonNum,
             episodeNumber = episodeNum,
             rating = rating,
-            genres = genres
+            genres = genres,
+            lastViewedAt = lastViewed
         )
     }
 

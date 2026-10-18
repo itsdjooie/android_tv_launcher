@@ -42,24 +42,35 @@ fun ContinueWatchingRow(
             .fillMaxWidth()
             .padding(vertical = 12.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.padding(start = 48.dp)
-        ) {
+        Column(modifier = Modifier.padding(start = 48.dp)) {
             Text(
-                text = title,
-                style = Typography.titleLarge.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                text = "MLHK STREAMING // MULTI-SERVICE",
+                style = Typography.labelSmall.copy(
+                    color = MlhkNeonPink,
+                    letterSpacing = 2.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp
+                )
             )
-            Text(
-                text = "Plex • Videoland • Netflix • Prime",
-                style = Typography.bodySmall.copy(color = MlhkNeonPink)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = Typography.titleLarge.copy(fontSize = 19.sp, fontWeight = FontWeight.Bold, color = MlhkTextMain)
+                )
+                val sourcesText = items.map { it.sourceName }.distinct().joinToString(" • ", prefix = "• ")
+                Text(
+                    text = sourcesText,
+                    style = Typography.bodySmall.copy(color = MlhkTextSub, fontSize = 12.sp)
+                )
+            }
         }
 
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 48.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(horizontal = 48.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             items(items, key = { it.id }) { item ->
@@ -78,13 +89,30 @@ private fun ContinueWatchingCard(
     val isFocused by interactionSource.collectIsFocusedAsState()
 
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.07f else 1.0f,
+        targetValue = if (isFocused) 1.06f else 1.0f,
         label = "cwScale"
     )
 
     val border = when {
         isFocused -> MlhkNeonPink
         else -> MlhkCardBorder
+    }
+
+    val brandColor = when (item.sourceName.lowercase()) {
+        "plex" -> Color(0xFFE5A00D)
+        "videoland" -> Color(0xFFE5003A)
+        "prime video", "prime", "amazon prime" -> Color(0xFF00A8E1)
+        "npo start", "npo" -> Color(0xFFFF5900)
+        "vtm go", "vtm" -> Color(0xFFFF0055)
+        "spotify" -> Color(0xFF1ED760)
+        "hbo max" -> Color(0xFF9E47FF)
+        "disney+" -> Color(0xFF0072D2)
+        "netflix" -> Color(0xFFE50914)
+        "youtube" -> Color(0xFFFF0000)
+        "viaplay" -> Color(0xFFFF1B51)
+        "kodi" -> Color(0xFF17B2E7)
+        "smarters iptv" -> MlhkNeonCyan
+        else -> MlhkPrimary
     }
 
     Column(
@@ -99,9 +127,9 @@ private fun ContinueWatchingCard(
             modifier = Modifier
                 .width(240.dp)
                 .height(135.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(MlhkCardBg)
-                .border(if (isFocused) 2.dp else 1.dp, border, RoundedCornerShape(14.dp))
+                .border(if (isFocused) 2.dp else 1.dp, border, RoundedCornerShape(16.dp))
         ) {
             if (item.imageUrl != null) {
                 AsyncImage(
@@ -121,18 +149,13 @@ private fun ContinueWatchingCard(
                         text = item.sourceName.uppercase(),
                         style = Typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
-                            color = when (item.sourceName.lowercase()) {
-                                "netflix" -> StatusRed
-                                "videoland" -> StatusRed
-                                "prime video" -> MlhkNeonCyan
-                                else -> MlhkPrimary
-                            }
+                            color = brandColor
                         )
                     )
                 }
             }
 
-            // Top Badges: Source Badge + Remaining Time
+            // Top Badges: Service Badge + Remaining Time
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
@@ -140,24 +163,20 @@ private fun ContinueWatchingCard(
                     .fillMaxWidth()
                     .padding(8.dp)
             ) {
-                // App Badge Pill
+                // App Badge Pill with exact MLHK glass design
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
-                        .background(Color.Black.copy(alpha = 0.8f))
-                        .padding(horizontal = 7.dp, vertical = 2.dp)
+                        .background(Color.Black.copy(alpha = 0.85f))
+                        .border(0.5.dp, brandColor.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
                     Text(
                         text = item.sourceName.uppercase(),
                         style = Typography.bodySmall.copy(
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = when (item.sourceName.lowercase()) {
-                                "netflix" -> StatusRed
-                                "videoland" -> StatusRed
-                                "prime video" -> MlhkNeonCyan
-                                else -> MlhkPrimary
-                            }
+                            color = brandColor
                         )
                     )
                 }
@@ -166,8 +185,8 @@ private fun ContinueWatchingCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(Color.Black.copy(alpha = 0.8f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .background(Color.Black.copy(alpha = 0.85f))
+                            .padding(horizontal = 7.dp, vertical = 3.dp)
                     ) {
                         Text(
                             text = item.remainingTime,
@@ -181,33 +200,33 @@ private fun ContinueWatchingCard(
                 }
             }
 
-            // Progress bar
+            // Progress bar at the bottom
             if (item.progress > 0) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .fillMaxWidth()
                         .height(4.dp)
-                        .background(Color.Black.copy(alpha = 0.6f))
+                        .background(Color.Black.copy(alpha = 0.7f))
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxHeight()
                             .fillMaxWidth(item.progress)
-                            .background(if (isFocused) MlhkNeonPink else MlhkPrimary)
+                            .background(if (isFocused) MlhkNeonPink else brandColor)
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(7.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Title
         Text(
             text = item.title,
             style = Typography.titleMedium.copy(
                 fontSize = 13.sp,
-                fontWeight = if (isFocused) FontWeight.SemiBold else FontWeight.Medium,
+                fontWeight = if (isFocused) FontWeight.Bold else FontWeight.Medium,
                 color = if (isFocused) MlhkTextMain else MlhkTextSub
             ),
             maxLines = 1,
