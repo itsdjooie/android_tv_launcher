@@ -1,0 +1,12 @@
+{
+  "name": "mlhk-monitoring-api",
+  "version": "1.0.0",
+  "description": "Central monitoring API for MLHK TV+ Launcher",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["mlhk", "monitoring", "healthcheck", "androidtv"],
+  "author": "MLHK",
+  "license": "ISC"
+}

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- MLHK Dark Theme Colors (from mlhk-source.css) -->
+    <color name="mlhk_bg">#080712</color>
+    <color name="mlhk_surface">#12111E</color>
+    <color name="mlhk_surface_hover">#25213A</color>
+    <color name="mlhk_card_bg">#120E20</color>
+    <color name="mlhk_card_border">#1AFFFFFF</color>
+    <color name="mlhk_card_border_glow">#4DFF2F7D</color>
+    
+    <color name="mlhk_primary">#FF4C9A</color>
+    <color name="mlhk_neon_pink">#FF2F7D</color>
+    <color name="mlhk_neon_pink_hover">#FF478F</color>
+    <color name="mlhk_neon_cyan">#00E5FF</color>
+    <color name="mlhk_neon_purple">#9B51E0</color>
+
+    <color name="mlhk_text_main">#F8F5FF</color>
+    <color name="mlhk_text_muted">#AAA3BD</color>
+    <color name="mlhk_text_sub">#C9BCD6</color>
+
+    <!-- Status Colors -->
+    <color name="status_green">#10B981</color>
+    <color name="status_orange">#F59E0B</color>
+    <color name="status_red">#EF4444</color>
+    <color name="status_grey">#6B7280</color>
+</resources>

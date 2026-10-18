@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MLHK TV+</string>
+    <string name="tab_live_tv">Nu op TV</string>
+    <string name="tab_guide">TV Gids</string>
+    <string name="tab_home">Start</string>
+    <string name="tab_movies_series">Films &amp; Series</string>
+    <string name="tab_apps">Apps</string>
+    <string name="tab_recordings">Opgeslagen</string>
+
+    <string name="section_continue_watching">Verder kijken</string>
+    <string name="section_recently_added">Recent toegevoegd</string>
+    <string name="section_recommended">Aanbevolen voor jou</string>
+    <string name="section_favorite_apps">Favoriete Apps</string>
+    <string name="section_movies">Films</string>
+    <string name="section_series">Series</string>
+
+    <string name="status_all_online">Alles online</string>
+    <string name="status_issues">Aandacht vereist</string>
+    <string name="status_offline">Diensten offline</string>
+    <string name="status_unknown">Status onbekend</string>
+
+    <string name="btn_play">Afspelen</string>
+    <string name="btn_resume">Hervatten</string>
+    <string name="btn_details">Details</string>
+    <string name="btn_settings">Instellingen</string>
+    <string name="btn_close">Sluiten</string>
+
+    <string name="plex_offline_title">Plex-verbinding configureren</string>
+    <string name="plex_offline_desc">Stel het IP-adres en token van je Plex Media Server in via Instellingen om je bibliotheek hier te zien.</string>
+</resources>

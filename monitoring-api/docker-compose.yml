@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  mlhk-monitor:
+    build: .
+    container_name: mlhk-monitoring-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.json:/app/config.json:ro
+    environment:
+      - NODE_ENV=production

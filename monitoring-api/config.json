@@ -1,0 +1,70 @@
+{
+  "server": {
+    "port": 8080,
+    "api_key": "mlhk-secure-key",
+    "check_interval_seconds": 30
+  },
+  "services": [
+    {
+      "id": "proxmox",
+      "name": "Proxmox VE",
+      "type": "http",
+      "url": "https://192.168.2.10:8006/api2/json/version",
+      "method": "GET",
+      "expected_status": [200, 401],
+      "timeout_ms": 3000,
+      "reject_unauthorized": false,
+      "critical": true
+    },
+    {
+      "id": "onepanel",
+      "name": "1Panel",
+      "type": "http",
+      "url": "http://192.168.2.11:10000",
+      "method": "GET",
+      "expected_status": [200, 302, 401],
+      "timeout_ms": 3000,
+      "critical": true
+    },
+    {
+      "id": "plex",
+      "name": "Plex Media Server",
+      "type": "http",
+      "url": "http://192.168.2.25:32400/identity",
+      "method": "GET",
+      "expected_status": [200],
+      "timeout_ms": 3000,
+      "critical": true
+    },
+    {
+      "id": "habnight",
+      "name": "HabNight",
+      "type": "http",
+      "url": "https://habnight.nl",
+      "method": "GET",
+      "expected_status": [200, 301, 302],
+      "timeout_ms": 4000,
+      "critical": false
+    },
+    {
+      "id": "mlhk",
+      "name": "MLHK.nl",
+      "type": "http",
+      "url": "https://mlhk.nl",
+      "method": "GET",
+      "expected_status": [200, 301, 302],
+      "timeout_ms": 4000,
+      "critical": true
+    },
+    {
+      "id": "workflow",
+      "name": "Workflow MLHK",
+      "type": "http",
+      "url": "https://workflow.mlhk.nl",
+      "method": "GET",
+      "expected_status": [200, 301, 302, 401],
+      "timeout_ms": 4000,
+      "critical": false
+    }
+  ]
+}
