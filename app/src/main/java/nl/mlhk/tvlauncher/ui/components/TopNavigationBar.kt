@@ -10,6 +10,7 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -29,10 +31,11 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 enum class TopTab(val label: String) {
+    START("Start"),
     LIVE_TV("Nu op TV"),
     GUIDE("TV Gids"),
-    START("Start"),
     MOVIES_SERIES("Films & Series"),
+    SPORT("Sport"),
     APPS("Apps"),
     SAVED("Opgeslagen")
 }
@@ -41,6 +44,7 @@ enum class TopTab(val label: String) {
 fun TopNavigationBar(
     selectedTab: TopTab,
     onTabSelected: (TopTab) -> Unit,
+    onSearchClick: () -> Unit,
     health: SystemHealthResponse,
     onStatusClick: () -> Unit,
     onSettingsClick: () -> Unit,
@@ -62,26 +66,34 @@ fun TopNavigationBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = modifier
             .fillMaxWidth()
-            .height(56.dp)
+            .height(64.dp)
             .padding(horizontal = 48.dp)
     ) {
-        // Left: MLHK Logo + Nav Tabs
+        // Left: MLHK Logo + Zoeken + Menu Tabs (Matches KPN DIW7022 exact layout)
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(22.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Image(
                 painter = painterResource(id = R.drawable.mlhk_logo),
                 contentDescription = "MLHK Logo",
                 modifier = Modifier
-                    .height(28.dp)
+                    .height(30.dp)
                     .wrapContentWidth()
             )
 
-            Spacer(modifier = Modifier.width(6.dp))
+            // Search Icon Button
+            NavIconButton(
+                icon = Icons.Default.Search,
+                label = "Zoeken",
+                onClick = onSearchClick
+            )
 
+            Spacer(modifier = Modifier.width(4.dp))
+
+            // Navigation Tabs with KPN Pill shape
             TopTab.values().forEach { tab ->
-                NavTabItem(
+                NavTabPill(
                     tab = tab,
                     isSelected = tab == selectedTab,
                     onClick = { onTabSelected(tab) }
@@ -89,44 +101,29 @@ fun TopNavigationBar(
             }
         }
 
-        // Right: Status indicator, Settings, Clock
+        // Right: Status indicator, Settings, Digital Clock
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             StatusIndicator(
                 health = health,
                 onClick = onStatusClick
             )
 
-            // Settings icon button
-            val settingsInteraction = remember { MutableInteractionSource() }
-            val isSettingsFocused by settingsInteraction.collectIsFocusedAsState()
+            NavIconButton(
+                icon = Icons.Default.Settings,
+                label = "Instellingen",
+                onClick = onSettingsClick
+            )
 
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(if (isSettingsFocused) MlhkSurfaceHover else Color.Transparent)
-                    .border(1.dp, if (isSettingsFocused) MlhkNeonPink else Color.Transparent, RoundedCornerShape(10.dp))
-                    .clickable(interactionSource = settingsInteraction, indication = null, onClick = onSettingsClick)
-                    .focusable(interactionSource = settingsInteraction)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Instellingen",
-                    tint = if (isSettingsFocused) MlhkTextMain else MlhkTextMuted,
-                    modifier = Modifier.size(19.dp)
-                )
-            }
-
-            // Clean Clock
+            // Digital Clock
             Text(
                 text = currentTime,
-                style = Typography.bodyMedium.copy(
+                style = Typography.titleMedium.copy(
                     fontSize = 15.sp,
-                    color = MlhkTextSub
+                    fontWeight = FontWeight.SemiBold,
+                    color = MlhkTextMain
                 )
             )
         }
@@ -134,7 +131,7 @@ fun TopNavigationBar(
 }
 
 @Composable
-private fun NavTabItem(
+private fun NavTabPill(
     tab: TopTab,
     isSelected: Boolean,
     onClick: () -> Unit
@@ -142,40 +139,69 @@ private fun NavTabItem(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
+    val bg = when {
+        isFocused -> MlhkPrimary
+        isSelected -> MlhkSurfaceHover
+        else -> Color.Transparent
+    }
+
     val textColor = when {
-        isFocused -> MlhkTextMain
+        isFocused -> MlhkBackground
         isSelected -> MlhkTextMain
         else -> MlhkTextMuted
     }
 
-    val underlineColor = when {
+    val border = when {
         isFocused -> MlhkNeonPink
-        isSelected -> MlhkPrimary
+        isSelected -> MlhkCardBorder
         else -> Color.Transparent
     }
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(20.dp))
+            .background(bg)
+            .border(1.dp, border, RoundedCornerShape(20.dp))
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .focusable(interactionSource = interactionSource)
-            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .padding(horizontal = 14.dp, vertical = 7.dp)
     ) {
         Text(
             text = tab.label,
-            style = Typography.titleMedium.copy(
-                fontSize = 15.sp,
+            style = Typography.labelMedium.copy(
+                fontSize = 14.sp,
+                fontWeight = if (isSelected || isFocused) FontWeight.SemiBold else FontWeight.Normal,
                 color = textColor
             )
         )
-        Spacer(modifier = Modifier.height(3.dp))
-        Box(
-            modifier = Modifier
-                .width(if (isSelected || isFocused) 18.dp else 0.dp)
-                .height(2.dp)
-                .clip(RoundedCornerShape(1.dp))
-                .background(underlineColor)
+    }
+}
+
+@Composable
+private fun NavIconButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(36.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(if (isFocused) MlhkPrimary else Color.Transparent)
+            .border(1.dp, if (isFocused) MlhkNeonPink else Color.Transparent, RoundedCornerShape(18.dp))
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .focusable(interactionSource = interactionSource)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (isFocused) MlhkBackground else MlhkTextMuted,
+            modifier = Modifier.size(19.dp)
         )
     }
 }

@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -29,8 +30,8 @@ import nl.mlhk.tvlauncher.ui.theme.*
 fun MediaCard(
     item: PlexMediaItem,
     isLandscape: Boolean = false,
-    cardWidth: Dp = if (isLandscape) 220.dp else 130.dp,
-    cardHeight: Dp = if (isLandscape) 124.dp else 195.dp,
+    cardWidth: Dp = if (isLandscape) 240.dp else 135.dp,
+    cardHeight: Dp = if (isLandscape) 135.dp else 200.dp,
     onFocusChange: (Boolean) -> Unit = {},
     onClick: (PlexMediaItem) -> Unit
 ) {
@@ -42,7 +43,7 @@ fun MediaCard(
     }
 
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.06f else 1.0f,
+        targetValue = if (isFocused) 1.07f else 1.0f,
         label = "cardScale"
     )
 
@@ -58,14 +59,14 @@ fun MediaCard(
             .clickable(interactionSource = interactionSource, indication = null) { onClick(item) }
             .focusable(interactionSource = interactionSource)
     ) {
-        // Thumbnail Box
+        // Thumbnail / Poster Box
         Box(
             modifier = Modifier
                 .width(cardWidth)
                 .height(cardHeight)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(14.dp))
                 .background(MlhkCardBg)
-                .border(if (isFocused) 2.dp else 1.dp, borderColor, RoundedCornerShape(12.dp))
+                .border(if (isFocused) 2.dp else 1.dp, borderColor, RoundedCornerShape(14.dp))
         ) {
             val imageUrl = if (isLandscape) (item.artUrl ?: item.thumbUrl) else (item.thumbUrl ?: item.artUrl)
             if (imageUrl != null) {
@@ -80,48 +81,99 @@ fun MediaCard(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(MlhkSurface)
+                        .background(MlhkSurfaceHover)
                 ) {
                     Text(
                         text = item.title.take(1),
-                        style = Typography.displayLarge.copy(color = MlhkNeonPink)
+                        style = Typography.displayLarge.copy(color = MlhkNeonPink, fontWeight = FontWeight.Bold)
+                    )
+                }
+            }
+
+            // Top Badges
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                if (item.rating != null && item.rating > 0 && !isLandscape) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color.Black.copy(alpha = 0.7f))
+                            .padding(horizontal = 5.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "★ ${String.format("%.1f", item.rating)}",
+                            style = Typography.bodySmall.copy(
+                                color = StatusOrange,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier.width(1.dp))
+                }
+
+                // 4K Badge
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color.Black.copy(alpha = 0.7f))
+                        .padding(horizontal = 5.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "4K",
+                        style = Typography.bodySmall.copy(
+                            color = Color.White,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                 }
             }
 
             // Watch Progress Bar (Verder kijken)
             if (item.progress > 0) {
-                Box(
+                Column(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .fillMaxWidth()
-                        .height(4.dp)
-                        .background(Color.Black.copy(alpha = 0.5f))
                 ) {
                     Box(
                         modifier = Modifier
-                            .fillMaxHeight()
-                            .fillMaxWidth(item.progress)
-                            .background(MlhkPrimary)
-                    )
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .background(Color.Black.copy(alpha = 0.6f))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(item.progress)
+                                .background(if (isFocused) MlhkNeonPink else MlhkPrimary)
+                        )
+                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(7.dp))
 
         // Title
         Text(
             text = item.title,
             style = Typography.titleMedium.copy(
                 fontSize = 13.sp,
+                fontWeight = if (isFocused) FontWeight.SemiBold else FontWeight.Medium,
                 color = if (isFocused) MlhkTextMain else MlhkTextSub
             ),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
 
-        // Subtitle (Series info or Year)
+        // Subtitle (Show name / Episode or Year)
         if (item.displaySubtitle.isNotBlank()) {
             Text(
                 text = item.displaySubtitle,

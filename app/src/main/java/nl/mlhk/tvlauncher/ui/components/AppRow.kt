@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,7 +29,7 @@ import nl.mlhk.tvlauncher.ui.theme.*
 
 @Composable
 fun AppRow(
-    title: String = "Favoriete Apps",
+    title: String = "Mijn favoriete apps",
     apps: List<AppItem>,
     onAppClick: (AppItem) -> Unit,
     modifier: Modifier = Modifier
@@ -36,14 +37,14 @@ fun AppRow(
     if (apps.isEmpty()) return
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp)
+            .padding(vertical = 12.dp)
     ) {
         Text(
             text = title,
-            style = Typography.titleLarge.copy(fontSize = 17.sp),
+            style = Typography.titleLarge.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold),
             modifier = Modifier.padding(start = 48.dp)
         )
 
@@ -80,24 +81,26 @@ private fun AppCardItem(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(108.dp)
+            .width(160.dp)
             .scale(scale)
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .focusable(interactionSource = interactionSource)
     ) {
+        // 16:9 Landscape Card (Exact KPN DIW7022 ratio)
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(108.dp, 72.dp)
+                .width(160.dp)
+                .height(96.dp)
                 .clip(RoundedCornerShape(14.dp))
-                .background(MlhkCardBg)
+                .background(if (isFocused) MlhkSurfaceHover else MlhkCardBg)
                 .border(if (isFocused) 2.dp else 1.dp, border, RoundedCornerShape(14.dp))
-                .padding(12.dp)
+                .padding(16.dp)
         ) {
             if (app.icon != null) {
                 val bitmap = remember(app.packageName) {
                     try {
-                        app.icon.toBitmap(96, 96).asImageBitmap()
+                        app.icon.toBitmap(120, 120).asImageBitmap()
                     } catch (e: Exception) {
                         null
                     }
@@ -111,18 +114,19 @@ private fun AppCardItem(
                 }
             } else {
                 Text(
-                    text = app.label.take(2),
-                    style = Typography.titleMedium.copy(color = MlhkPrimary)
+                    text = app.label.take(2).uppercase(),
+                    style = Typography.titleMedium.copy(color = MlhkPrimary, fontWeight = FontWeight.Bold)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(7.dp))
 
         Text(
             text = app.label,
             style = Typography.bodySmall.copy(
                 fontSize = 12.sp,
+                fontWeight = if (isFocused) FontWeight.SemiBold else FontWeight.Normal,
                 color = if (isFocused) MlhkTextMain else MlhkTextSub
             ),
             maxLines = 1,

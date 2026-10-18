@@ -7,21 +7,25 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nl.mlhk.tvlauncher.data.AppManager
 import nl.mlhk.tvlauncher.data.ConfigManager
+import nl.mlhk.tvlauncher.data.LiveTvProvider
 import nl.mlhk.tvlauncher.data.PlexClient
 import nl.mlhk.tvlauncher.data.StatusClient
 import nl.mlhk.tvlauncher.model.AppItem
+import nl.mlhk.tvlauncher.model.LiveTvChannel
 import nl.mlhk.tvlauncher.model.PlexMediaItem
 import nl.mlhk.tvlauncher.model.SystemHealthResponse
 import nl.mlhk.tvlauncher.ui.components.*
 import nl.mlhk.tvlauncher.ui.theme.MlhkBackground
-import nl.mlhk.tvlauncher.ui.theme.MlhkTextMuted
-import nl.mlhk.tvlauncher.ui.theme.Typography
+import nl.mlhk.tvlauncher.ui.theme.MlhkNeonCyan
+import nl.mlhk.tvlauncher.ui.theme.MlhkNeonPink
+import nl.mlhk.tvlauncher.ui.theme.MlhkNeonPurple
 
 @Composable
 fun HomeScreen(
@@ -37,8 +41,11 @@ fun HomeScreen(
     var selectedTab by remember { mutableStateOf(TopTab.START) }
     var showStatusDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var showTvGuideDialog by remember { mutableStateOf(false) }
+    var showSearchDialog by remember { mutableStateOf(false) }
 
     var health by remember { mutableStateOf(SystemHealthResponse()) }
+    var liveChannels by remember { mutableStateOf<List<LiveTvChannel>>(emptyList()) }
     var continueWatchingItems by remember { mutableStateOf<List<PlexMediaItem>>(emptyList()) }
     var recentlyAddedItems by remember { mutableStateOf<List<PlexMediaItem>>(emptyList()) }
     var recommendedItems by remember { mutableStateOf<List<PlexMediaItem>>(emptyList()) }
@@ -47,11 +54,11 @@ fun HomeScreen(
     var apps by remember { mutableStateOf<List<AppItem>>(emptyList()) }
 
     var heroItem by remember { mutableStateOf<PlexMediaItem?>(null) }
-    var isPlexLoading by remember { mutableStateOf(true) }
 
     fun loadContent() {
         coroutineScope.launch {
-            isPlexLoading = true
+            // Live TV Channels
+            liveChannels = LiveTvProvider.getChannels()
 
             // Fetch Status
             try {
@@ -67,7 +74,7 @@ fun HomeScreen(
                 apps = emptyList()
             }
 
-            // Fetch Plex rows
+            // Fetch Plex Rows (with rich fallback previews)
             try {
                 val cw = plexClient.getContinueWatching()
                 val ra = plexClient.getRecentlyAdded()
@@ -82,12 +89,10 @@ fun HomeScreen(
                 seriesItems = ser
 
                 if (heroItem == null) {
-                    heroItem = cw.firstOrNull() ?: rec.firstOrNull() ?: ra.firstOrNull()
+                    heroItem = ra.firstOrNull() ?: cw.firstOrNull() ?: rec.firstOrNull()
                 }
             } catch (e: Exception) {
-                // Plex load error handled
-            } finally {
-                isPlexLoading = false
+                // error handled
             }
         }
     }
@@ -102,10 +107,15 @@ fun HomeScreen(
             delay(60_000)
             try {
                 health = statusClient.getSystemStatus()
+                liveChannels = LiveTvProvider.getChannels() // update progress
             } catch (e: Exception) {
-                // ignore periodic status error
+                // ignore
             }
         }
+    }
+
+    val allPlexItems = remember(continueWatchingItems, recentlyAddedItems, recommendedItems, movieItems, seriesItems) {
+        (continueWatchingItems + recentlyAddedItems + recommendedItems + movieItems + seriesItems).distinctBy { it.id }
     }
 
     Box(
@@ -113,56 +123,96 @@ fun HomeScreen(
             .fillMaxSize()
             .background(MlhkBackground)
     ) {
+        // MLHK Next-Gen Ambient Aurora Background Effect (from mlhk-source.css)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(MlhkNeonPink.copy(alpha = 0.08f), Color.Transparent),
+                        radius = 800f
+                    )
+                )
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(MlhkNeonPurple.copy(alpha = 0.07f), Color.Transparent),
+                        radius = 1100f
+                    )
+                )
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
         ) {
-            // 1. Top Navigation Bar (replaces KPN header with MLHK logo + tabs + status)
+            // 1. Top Navigation Bar (Matches KPN TV+ layout with MLHK styling)
             TopNavigationBar(
                 selectedTab = selectedTab,
                 onTabSelected = { tab ->
                     selectedTab = tab
                     when (tab) {
-                        TopTab.LIVE_TV -> appManager.launchKpnTv("live")
-                        TopTab.GUIDE -> appManager.launchKpnTv("guide")
-                        TopTab.SAVED -> appManager.launchKpnTv("recordings")
-                        TopTab.APPS -> {
-                            coroutineScope.launch {
-                                scrollState.animateScrollTo(600)
-                            }
+                        TopTab.START -> {
+                            coroutineScope.launch { scrollState.animateScrollTo(0) }
+                        }
+                        TopTab.LIVE_TV -> {
+                            appManager.launchKpnTv("live")
+                        }
+                        TopTab.GUIDE -> {
+                            showTvGuideDialog = true
                         }
                         TopTab.MOVIES_SERIES -> {
-                            coroutineScope.launch {
-                                scrollState.animateScrollTo(900)
-                            }
+                            coroutineScope.launch { scrollState.animateScrollTo(1000) }
                         }
-                        TopTab.START -> {
-                            coroutineScope.launch {
-                                scrollState.animateScrollTo(0)
-                            }
+                        TopTab.SPORT -> {
+                            appManager.launchKpnTv("sport")
+                        }
+                        TopTab.APPS -> {
+                            coroutineScope.launch { scrollState.animateScrollTo(420) }
+                        }
+                        TopTab.SAVED -> {
+                            appManager.launchKpnTv("recordings")
                         }
                     }
                 },
+                onSearchClick = { showSearchDialog = true },
                 health = health,
                 onStatusClick = { showStatusDialog = true },
                 onSettingsClick = { showSettingsDialog = true }
             )
 
-            // 2. Hero Banner (Spotlight backdrop + active/top Plex item)
+            // 2. Cinematic Hero Banner (Plex featured item)
             HeroBanner(
                 item = heroItem,
-                onPlayClick = { item ->
-                    appManager.launchPlexMedia(item)
-                }
+                onPlayClick = { item -> appManager.launchPlexMedia(item) }
             )
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 3. Verder kijken (Continue Watching from Plex with progress bar)
+            // 3. Nu op TV (Live Zenders Row - KPN TV Feature)
+            LiveTvRow(
+                title = "Nu op TV (Live Zenders)",
+                channels = liveChannels,
+                onChannelClick = { channel ->
+                    appManager.launchKpnTv("channel_${channel.channelNumber}")
+                }
+            )
+
+            // 4. Mijn favoriete apps Row (Exact KPN DIW7022 16:9 cards)
+            AppRow(
+                title = "Mijn favoriete apps",
+                apps = apps,
+                onAppClick = { app -> appManager.launchApp(app.packageName) }
+            )
+
+            // 5. Verder kijken (Plex Continue Watching with Progress Bar)
             if (continueWatchingItems.isNotEmpty()) {
                 MediaRow(
-                    title = "Verder kijken",
+                    title = "Verder kijken in Plex",
                     items = continueWatchingItems,
                     isLandscape = true,
                     onItemFocused = { heroItem = it },
@@ -170,10 +220,10 @@ fun HomeScreen(
                 )
             }
 
-            // 4. Recent toegevoegd (Recently Added from Plex)
+            // 6. Recent toegevoegd (Plex Recently Added)
             if (recentlyAddedItems.isNotEmpty()) {
                 MediaRow(
-                    title = "Recent toegevoegd",
+                    title = "Recent toegevoegd in Plex",
                     items = recentlyAddedItems,
                     isLandscape = false,
                     onItemFocused = { heroItem = it },
@@ -181,10 +231,10 @@ fun HomeScreen(
                 )
             }
 
-            // 5. Aanbevolen voor jou (Recommended from Plex)
+            // 7. Aanbevolen voor jou (Plex Recommendations)
             if (recommendedItems.isNotEmpty()) {
                 MediaRow(
-                    title = "Aanbevolen voor jou",
+                    title = "Aanbevolen films & series",
                     items = recommendedItems,
                     isLandscape = false,
                     onItemFocused = { heroItem = it },
@@ -192,19 +242,10 @@ fun HomeScreen(
                 )
             }
 
-            // 6. Favoriete Apps Row
-            AppRow(
-                title = "Favoriete Apps",
-                apps = apps,
-                onAppClick = { app ->
-                    appManager.launchApp(app.packageName)
-                }
-            )
-
-            // 7. Films (Plex Library)
+            // 8. Films (Plex Movies Library)
             if (movieItems.isNotEmpty()) {
                 MediaRow(
-                    title = "Films",
+                    title = "Populaire Films",
                     items = movieItems,
                     isLandscape = false,
                     onItemFocused = { heroItem = it },
@@ -212,10 +253,10 @@ fun HomeScreen(
                 )
             }
 
-            // 8. Series (Plex Library)
+            // 9. Series (Plex TV Series Library)
             if (seriesItems.isNotEmpty()) {
                 MediaRow(
-                    title = "Series",
+                    title = "Populaire Series",
                     items = seriesItems,
                     isLandscape = false,
                     onItemFocused = { heroItem = it },
@@ -223,35 +264,43 @@ fun HomeScreen(
                 )
             }
 
-            // Fallback information if Plex has no items yet
-            if (!isPlexLoading && continueWatchingItems.isEmpty() && recentlyAddedItems.isEmpty() && recommendedItems.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 48.dp, vertical = 24.dp)
-                ) {
-                    Text(
-                        text = "Plex Media Server koppeling",
-                        style = Typography.titleLarge
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Nog geen Plex-aanbevelingen geladen. Controleer via Instellingen (tandwiel rechtsboven) het Plex IP-adres en Token.",
-                        style = Typography.bodyMedium.copy(color = MlhkTextMuted)
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    TvButton(
-                        text = "Instellingen openen",
-                        isPrimary = true,
-                        onClick = { showSettingsDialog = true }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(60.dp))
+            Spacer(modifier = Modifier.height(70.dp))
         }
 
-        // Status Dialog Overlay
+        // Search Dialog Overlay
+        if (showSearchDialog) {
+            SearchDialog(
+                plexItems = allPlexItems,
+                apps = apps,
+                onSelectPlex = { item ->
+                    showSearchDialog = false
+                    appManager.launchPlexMedia(item)
+                },
+                onSelectApp = { app ->
+                    showSearchDialog = false
+                    appManager.launchApp(app.packageName)
+                },
+                onDismiss = { showSearchDialog = false }
+            )
+        }
+
+        // TV Gids (EPG) Dialog Overlay
+        if (showTvGuideDialog) {
+            TvGuideDialog(
+                channels = liveChannels,
+                onSelectChannel = { channel ->
+                    showTvGuideDialog = false
+                    appManager.launchKpnTv("channel_${channel.channelNumber}")
+                },
+                onOpenNativeGuide = {
+                    showTvGuideDialog = false
+                    appManager.launchKpnTv("guide")
+                },
+                onDismiss = { showTvGuideDialog = false }
+            )
+        }
+
+        // Server Status Dialog Overlay
         if (showStatusDialog) {
             StatusDialog(
                 health = health,
