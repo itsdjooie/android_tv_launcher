@@ -51,6 +51,7 @@ class ContinueWatchingProvider(
                     basePlexUsageTime - (index * 60_000L)
                 }
 
+                val plexApp = appMap[ConfigManager.PLEX_PACKAGE_NAME]
                 return ContinueWatchingItem(
                     id = "plex_${p.id}",
                     title = p.title,
@@ -61,7 +62,9 @@ class ContinueWatchingProvider(
                     progress = progressPercent,
                     remainingTime = if (remainingMin != null) "Nog ${remainingMin}m" else "Hervatten",
                     plexItem = p,
-                    lastViewedTimestamp = itemTimestamp
+                    lastViewedTimestamp = itemTimestamp,
+                    appBanner = plexApp?.banner,
+                    appIcon = plexApp?.icon
                 )
             }
 
@@ -80,18 +83,21 @@ class ContinueWatchingProvider(
         val videolandPkg = "nl.rtl.videoland.v2"
         if (favoritePackages.contains(videolandPkg) && appMap.containsKey(videolandPkg)) {
             handledPackages.add(videolandPkg)
+            val vlApp = appMap[videolandPkg]
             val vlTime = configManager.getPackageLastUsedTime(videolandPkg)
             allCandidateItems.add(
                 ContinueWatchingItem(
                     id = "videoland_1",
                     title = "Special Forces VIPS",
                     subtitle = "S2:A6 • Aflevering 6",
-                    imageUrl = "https://image.tmdb.org/t/p/w780/bZ00cM88aV4mQh2V0n1eK8f5a6b.jpg",
+                    imageUrl = "https://static.tvmaze.com/uploads/images/original_untouched/388/971212.jpg",
                     sourceName = "Videoland",
                     sourcePackage = videolandPkg,
                     progress = 0.65f,
                     remainingTime = "Nog 24m",
-                    lastViewedTimestamp = vlTime
+                    lastViewedTimestamp = vlTime,
+                    appBanner = vlApp?.banner,
+                    appIcon = vlApp?.icon
                 )
             )
             allCandidateItems.add(
@@ -99,12 +105,14 @@ class ContinueWatchingProvider(
                     id = "videoland_2",
                     title = "De Augurkenkoning",
                     subtitle = "S1:A3 • Aflevering 3",
-                    imageUrl = "https://image.tmdb.org/t/p/w780/kXfq722yVp0D2a4gO6hMv0Z6o1F.jpg",
+                    imageUrl = "https://static.tvmaze.com/uploads/images/original_untouched/642/1606356.jpg",
                     sourceName = "Videoland",
                     sourcePackage = videolandPkg,
                     progress = 0.42f,
                     remainingTime = "Nog 16m",
-                    lastViewedTimestamp = vlTime - 60_000L
+                    lastViewedTimestamp = vlTime - 60_000L,
+                    appBanner = vlApp?.banner,
+                    appIcon = vlApp?.icon
                 )
             )
         }
@@ -113,18 +121,21 @@ class ContinueWatchingProvider(
         val primePkg = "com.amazon.amazonvideo.livingroom"
         if (favoritePackages.contains(primePkg) && appMap.containsKey(primePkg)) {
             handledPackages.add(primePkg)
+            val primeApp = appMap[primePkg]
             val primeTime = configManager.getPackageLastUsedTime(primePkg)
             allCandidateItems.add(
                 ContinueWatchingItem(
                     id = "prime_1",
                     title = "Fallout",
                     subtitle = "S1:A3 • De Koptelefoon",
-                    imageUrl = "https://image.tmdb.org/t/p/w780/AnsTXULm9o3JwIMR71G2PzQkKqS.jpg",
+                    imageUrl = "https://static.tvmaze.com/uploads/images/original_untouched/599/1499142.jpg",
                     sourceName = "Prime Video",
                     sourcePackage = primePkg,
                     progress = 0.58f,
                     remainingTime = "Nog 26m",
-                    lastViewedTimestamp = primeTime
+                    lastViewedTimestamp = primeTime,
+                    appBanner = primeApp?.banner,
+                    appIcon = primeApp?.icon
                 )
             )
             allCandidateItems.add(
@@ -132,12 +143,14 @@ class ContinueWatchingProvider(
                     id = "prime_2",
                     title = "The Rings of Power",
                     subtitle = "S2:A4 • De Schaduw",
-                    imageUrl = "https://image.tmdb.org/t/p/w780/mYLOqiWvCusYv6mawhjXF5l2zTq.jpg",
+                    imageUrl = "https://static.tvmaze.com/uploads/images/original_untouched/633/1584401.jpg",
                     sourceName = "Prime Video",
                     sourcePackage = primePkg,
                     progress = 0.45f,
                     remainingTime = "Nog 34m",
-                    lastViewedTimestamp = primeTime - 60_000L
+                    lastViewedTimestamp = primeTime - 60_000L,
+                    appBanner = primeApp?.banner,
+                    appIcon = primeApp?.icon
                 )
             )
         }
@@ -146,18 +159,21 @@ class ContinueWatchingProvider(
         val npoPkg = "nl.uitzendinggemist"
         if (favoritePackages.contains(npoPkg) && appMap.containsKey(npoPkg)) {
             handledPackages.add(npoPkg)
+            val npoApp = appMap[npoPkg]
             val npoTime = configManager.getPackageLastUsedTime(npoPkg)
             allCandidateItems.add(
                 ContinueWatchingItem(
                     id = "npo_1",
                     title = "Wie is de Mol?",
                     subtitle = "S24:A4 • De Onderstroom",
-                    imageUrl = "https://image.tmdb.org/t/p/w780/3Tmni5r3tU8tX0R1u6UfL2Tqk7B.jpg",
+                    imageUrl = "https://static.tvmaze.com/uploads/images/original_untouched/280/701240.jpg",
                     sourceName = "NPO Start",
                     sourcePackage = npoPkg,
                     progress = 0.70f,
                     remainingTime = "Nog 19m",
-                    lastViewedTimestamp = npoTime
+                    lastViewedTimestamp = npoTime,
+                    appBanner = npoApp?.banner,
+                    appIcon = npoApp?.icon
                 )
             )
             allCandidateItems.add(
@@ -165,12 +181,14 @@ class ContinueWatchingProvider(
                     id = "npo_2",
                     title = "Flikken Maastricht",
                     subtitle = "S18:A2 • Grensgevaar",
-                    imageUrl = "https://image.tmdb.org/t/p/w780/rJ9pG4yE72P9zQe32P0QkG2lB1A.jpg",
+                    imageUrl = "https://static.tvmaze.com/uploads/images/original_untouched/551/1379797.jpg",
                     sourceName = "NPO Start",
                     sourcePackage = npoPkg,
                     progress = 0.38f,
                     remainingTime = "Nog 29m",
-                    lastViewedTimestamp = npoTime - 60_000L
+                    lastViewedTimestamp = npoTime - 60_000L,
+                    appBanner = npoApp?.banner,
+                    appIcon = npoApp?.icon
                 )
             )
         }
@@ -179,18 +197,21 @@ class ContinueWatchingProvider(
         val vtmPkg = "be.vmma.vtm.zenderapp"
         if (favoritePackages.contains(vtmPkg) && appMap.containsKey(vtmPkg)) {
             handledPackages.add(vtmPkg)
+            val vtmApp = appMap[vtmPkg]
             val vtmTime = configManager.getPackageLastUsedTime(vtmPkg)
             allCandidateItems.add(
                 ContinueWatchingItem(
                     id = "vtm_1",
                     title = "De Verraders",
                     subtitle = "S3:A5 • De Nachtraad",
-                    imageUrl = "https://image.tmdb.org/t/p/w780/6WvQc5yO1gA5d8kK9P0l8Q4j2K1.jpg",
+                    imageUrl = "https://static.tvmaze.com/uploads/images/original_untouched/576/1441755.jpg",
                     sourceName = "VTM GO",
                     sourcePackage = vtmPkg,
                     progress = 0.52f,
                     remainingTime = "Nog 23m",
-                    lastViewedTimestamp = vtmTime
+                    lastViewedTimestamp = vtmTime,
+                    appBanner = vtmApp?.banner,
+                    appIcon = vtmApp?.icon
                 )
             )
             allCandidateItems.add(
@@ -198,12 +219,14 @@ class ContinueWatchingProvider(
                     id = "vtm_2",
                     title = "Familie",
                     subtitle = "Aflevering 7421 • Vandaag",
-                    imageUrl = "https://image.tmdb.org/t/p/w780/vGvh5T5Fq3G1k5P0l8Q4j2K1.jpg",
+                    imageUrl = "https://static.tvmaze.com/uploads/images/original_untouched/637/1593382.jpg",
                     sourceName = "VTM GO",
                     sourcePackage = vtmPkg,
                     progress = 0.40f,
                     remainingTime = "Nog 14m",
-                    lastViewedTimestamp = vtmTime - 60_000L
+                    lastViewedTimestamp = vtmTime - 60_000L,
+                    appBanner = vtmApp?.banner,
+                    appIcon = vtmApp?.icon
                 )
             )
         }
@@ -218,18 +241,21 @@ class ContinueWatchingProvider(
         val favoritedYt = ytPackages.firstOrNull { favoritePackages.contains(it) && appMap.containsKey(it) }
         if (favoritedYt != null) {
             ytPackages.forEach { handledPackages.add(it) }
+            val ytApp = appMap[favoritedYt]
             val ytTime = configManager.getPackageLastUsedTime(favoritedYt)
             allCandidateItems.add(
                 ContinueWatchingItem(
                     id = "youtube_continue",
                     title = "YouTube",
-                    subtitle = "Aanbevolen feeds hervatten",
-                    imageUrl = null,
+                    subtitle = "Aanbevolen video's hervatten",
+                    imageUrl = "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=780&auto=format&fit=crop&q=80",
                     sourceName = "YouTube",
                     sourcePackage = favoritedYt,
                     progress = 0.50f,
                     remainingTime = "Hervatten",
-                    lastViewedTimestamp = ytTime
+                    lastViewedTimestamp = ytTime,
+                    appBanner = ytApp?.banner,
+                    appIcon = ytApp?.icon
                 )
             )
         }
@@ -238,18 +264,21 @@ class ContinueWatchingProvider(
         val spotifyPkg = "com.spotify.tv.android"
         if (favoritePackages.contains(spotifyPkg) && appMap.containsKey(spotifyPkg)) {
             handledPackages.add(spotifyPkg)
+            val spotApp = appMap[spotifyPkg]
             val spotTime = configManager.getPackageLastUsedTime(spotifyPkg)
             allCandidateItems.add(
                 ContinueWatchingItem(
                     id = "spotify_continue",
                     title = "Spotify",
                     subtitle = "Daily Mix 1 • Verder luisteren",
-                    imageUrl = "https://images.unsplash.com/photo-1614680376593-902f749f7ffc?w=780&auto=format&fit=crop&q=80",
+                    imageUrl = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=780&auto=format&fit=crop&q=80",
                     sourceName = "Spotify",
                     sourcePackage = spotifyPkg,
                     progress = 0.65f,
                     remainingTime = "Afspelen",
-                    lastViewedTimestamp = spotTime
+                    lastViewedTimestamp = spotTime,
+                    appBanner = spotApp?.banner,
+                    appIcon = spotApp?.icon
                 )
             )
         }
@@ -258,18 +287,21 @@ class ContinueWatchingProvider(
         val hboPkg = "com.wbd.hbomax"
         if (favoritePackages.contains(hboPkg) && appMap.containsKey(hboPkg)) {
             handledPackages.add(hboPkg)
+            val hboApp = appMap[hboPkg]
             val hboTime = configManager.getPackageLastUsedTime(hboPkg)
             allCandidateItems.add(
                 ContinueWatchingItem(
                     id = "hbo_1",
                     title = "The Penguin",
                     subtitle = "S1:A4 • Cent'Anni",
-                    imageUrl = "https://image.tmdb.org/t/p/w780/aKA5e4jI5aN1C93d8bC0j1bF.jpg",
+                    imageUrl = "https://static.tvmaze.com/uploads/images/original_untouched/536/1340329.jpg",
                     sourceName = "HBO Max",
                     sourcePackage = hboPkg,
                     progress = 0.58f,
                     remainingTime = "Nog 28m",
-                    lastViewedTimestamp = hboTime
+                    lastViewedTimestamp = hboTime,
+                    appBanner = hboApp?.banner,
+                    appIcon = hboApp?.icon
                 )
             )
             allCandidateItems.add(
@@ -277,12 +309,14 @@ class ContinueWatchingProvider(
                     id = "hbo_2",
                     title = "House of the Dragon",
                     subtitle = "S2:A4 • The Red Dragon",
-                    imageUrl = "https://image.tmdb.org/t/p/w780/etj5CuMuamfdLnlQwV29oKi0ZIX.jpg",
+                    imageUrl = "https://static.tvmaze.com/uploads/images/original_untouched/627/1568449.jpg",
                     sourceName = "HBO Max",
                     sourcePackage = hboPkg,
                     progress = 0.72f,
                     remainingTime = "Nog 18m",
-                    lastViewedTimestamp = hboTime - 60_000L
+                    lastViewedTimestamp = hboTime - 60_000L,
+                    appBanner = hboApp?.banner,
+                    appIcon = hboApp?.icon
                 )
             )
         }
@@ -291,18 +325,21 @@ class ContinueWatchingProvider(
         val disneyPkg = "com.disney.disneyplus"
         if (favoritePackages.contains(disneyPkg) && appMap.containsKey(disneyPkg)) {
             handledPackages.add(disneyPkg)
+            val disApp = appMap[disneyPkg]
             val disTime = configManager.getPackageLastUsedTime(disneyPkg)
             allCandidateItems.add(
                 ContinueWatchingItem(
                     id = "disney_1",
                     title = "Shōgun",
                     subtitle = "S1:A1 • Anjin",
-                    imageUrl = "https://image.tmdb.org/t/p/w780/7O4iVfOMQmdCSxhOg1WnzG1AgYT.jpg",
+                    imageUrl = "https://static.tvmaze.com/uploads/images/original_untouched/506/1265637.jpg",
                     sourceName = "Disney+",
                     sourcePackage = disneyPkg,
                     progress = 0.60f,
                     remainingTime = "Nog 22m",
-                    lastViewedTimestamp = disTime
+                    lastViewedTimestamp = disTime,
+                    appBanner = disApp?.banner,
+                    appIcon = disApp?.icon
                 )
             )
             allCandidateItems.add(
@@ -310,12 +347,14 @@ class ContinueWatchingProvider(
                     id = "disney_2",
                     title = "The Mandalorian",
                     subtitle = "Hoofdstuk 24 • The Return",
-                    imageUrl = "https://image.tmdb.org/t/p/w780/eU1iPfJxT4Pq7gvl6gZsTN99PXq.jpg",
+                    imageUrl = "https://static.tvmaze.com/uploads/images/original_untouched/501/1253498.jpg",
                     sourceName = "Disney+",
                     sourcePackage = disneyPkg,
                     progress = 0.80f,
                     remainingTime = "Nog 12m",
-                    lastViewedTimestamp = disTime - 60_000L
+                    lastViewedTimestamp = disTime - 60_000L,
+                    appBanner = disApp?.banner,
+                    appIcon = disApp?.icon
                 )
             )
         }
@@ -324,18 +363,21 @@ class ContinueWatchingProvider(
         val netflixPkg = "com.netflix.ninja"
         if (favoritePackages.contains(netflixPkg) && appMap.containsKey(netflixPkg)) {
             handledPackages.add(netflixPkg)
+            val nfApp = appMap[netflixPkg]
             val nfTime = configManager.getPackageLastUsedTime(netflixPkg)
             allCandidateItems.add(
                 ContinueWatchingItem(
                     id = "netflix_1",
                     title = "Stranger Things",
                     subtitle = "S4:A7 • The Massacre at Hawkins Lab",
-                    imageUrl = "https://image.tmdb.org/t/p/w780/49WJfeN0moxb9IPfGn8AIqMGskD.jpg",
+                    imageUrl = "https://static.tvmaze.com/uploads/images/original_untouched/494/1236128.jpg",
                     sourceName = "Netflix",
                     sourcePackage = netflixPkg,
                     progress = 0.75f,
                     remainingTime = "Nog 21m",
-                    lastViewedTimestamp = nfTime
+                    lastViewedTimestamp = nfTime,
+                    appBanner = nfApp?.banner,
+                    appIcon = nfApp?.icon
                 )
             )
         }
@@ -356,7 +398,9 @@ class ContinueWatchingProvider(
                             sourcePackage = pkg,
                             progress = 0.50f,
                             remainingTime = "Openen",
-                            lastViewedTimestamp = fallbackTime
+                            lastViewedTimestamp = fallbackTime,
+                            appBanner = app.banner,
+                            appIcon = app.icon
                         )
                     )
                 }

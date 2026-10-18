@@ -23,7 +23,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.graphics.drawable.toBitmap
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import nl.mlhk.tvlauncher.model.ContinueWatchingItem
 import nl.mlhk.tvlauncher.ui.theme.*
 
@@ -115,6 +120,22 @@ private fun ContinueWatchingCard(
         else -> MlhkPrimary
     }
 
+    val context = LocalContext.current
+    val bannerBitmap = remember(item.id, item.appBanner) {
+        try {
+            item.appBanner?.toBitmap(480, 270)?.asImageBitmap()
+        } catch (_: Exception) {
+            null
+        }
+    }
+    val iconBitmap = remember(item.id, item.appIcon) {
+        try {
+            item.appIcon?.toBitmap(128, 128)?.asImageBitmap()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     Column(
         modifier = Modifier
             .width(240.dp)
@@ -131,19 +152,50 @@ private fun ContinueWatchingCard(
                 .background(MlhkCardBg)
                 .border(if (isFocused) 2.dp else 1.dp, border, RoundedCornerShape(16.dp))
         ) {
-            if (item.imageUrl != null) {
+            if (!item.imageUrl.isNullOrBlank()) {
                 AsyncImage(
-                    model = item.imageUrl,
+                    model = ImageRequest.Builder(context)
+                        .data(item.imageUrl)
+                        .crossfade(true)
+                        .build(),
                     contentDescription = item.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
+            } else if (bannerBitmap != null) {
+                Image(
+                    bitmap = bannerBitmap,
+                    contentDescription = item.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else if (iconBitmap != null) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            androidx.compose.ui.graphics.Brush.radialGradient(
+                                listOf(brandColor.copy(alpha = 0.35f), MlhkCardBg)
+                            )
+                        )
+                ) {
+                    Image(
+                        bitmap = iconBitmap,
+                        contentDescription = item.title,
+                        modifier = Modifier.size(56.dp)
+                    )
+                }
             } else {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(MlhkSurfaceHover)
+                        .background(
+                            androidx.compose.ui.graphics.Brush.radialGradient(
+                                listOf(brandColor.copy(alpha = 0.35f), MlhkCardBg)
+                            )
+                        )
                 ) {
                     Text(
                         text = item.sourceName.uppercase(),
@@ -154,6 +206,21 @@ private fun ContinueWatchingCard(
                     )
                 }
             }
+
+            // Subtle dark bottom gradient for high contrast readability of progress bar
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            listOf(
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.65f)
+                            )
+                        )
+                    )
+            )
 
             // Top Badges: Service Badge + Remaining Time
             Row(
