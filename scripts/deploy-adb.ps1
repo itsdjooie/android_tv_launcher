@@ -1,5 +1,5 @@
 param(
-    [string]$DeviceIp = "192.168.2.58",
+    [string]$DeviceIp = "192.168.2.26",
     [int]$Port = 5555,
     [string]$ApkPath = "dist\mlhk-tvplus-launcher.apk"
 )

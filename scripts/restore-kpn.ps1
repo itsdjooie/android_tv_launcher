@@ -1,7 +1,7 @@
 param(
-    [string]$DeviceIp = "192.168.2.58",
+    [string]$DeviceIp = "192.168.2.26",
     [int]$Port = 5555,
-    [string]$KpnPackage = "com.kpn.kpnandroidtv"
+    [string]$KpnPackage = "com.kpn.tvlauncher"
 )
 
 $ErrorActionPreference = "Stop"
@@ -31,7 +31,7 @@ Write-Host "==> Verbinding maken met KPN TV+ Box ($DeviceIp:$Port)..." -Foregrou
 & $adbPath connect "$DeviceIp`:$Port"
 
 Write-Host "==> Originele KPN TV+ Launcher starten..." -ForegroundColor Cyan
-& $adbPath -s "$DeviceIp`:$Port" shell monkey -p $KpnPackage -c android.intent.category.LAUNCHER 1
+& $adbPath -s "$DeviceIp`:$Port" shell am start -n "$KpnPackage/.MainActivity"
 
 Write-Host "==> Standaard launcher voorkeur herstellen..." -ForegroundColor Cyan
 & $adbPath -s "$DeviceIp`:$Port" shell cmd package set-home-activity $KpnPackage

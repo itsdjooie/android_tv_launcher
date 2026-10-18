@@ -102,7 +102,7 @@ class AppManager(private val context: Context, private val configManager: Config
         val launched = launchApp(kpnPkg)
         if (!launched) {
             // Also try alternative known KPN package names
-            val alternatives = listOf("com.kpn.kpnandroidtv", "nl.kpn.itv.androidtv", "com.kpn.tvplus")
+            val alternatives = listOf("com.kpn.tvlauncher", "com.kpn.kpnandroidtv", "nl.kpn.itv.androidtv", "com.kpn.tvplus")
             for (alt in alternatives) {
                 if (alt != kpnPkg && launchApp(alt)) return true
             }

@@ -40,7 +40,7 @@ class ConfigManager(context: Context) {
         const val DEFAULT_PLEX_TOKEN = ""
         const val DEFAULT_MONITORING_URL = "http://192.168.2.25:8080/api/status"
         const val DEFAULT_MONITORING_KEY = "mlhk-secure-key"
-        const val DEFAULT_KPN_PACKAGE = "com.kpn.kpnandroidtv"
+        const val DEFAULT_KPN_PACKAGE = "com.kpn.tvlauncher"
         const val PLEX_PACKAGE_NAME = "com.plexapp.android"
     }
 }
