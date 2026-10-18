@@ -36,7 +36,7 @@ class ConfigManager(context: Context) {
         private const val KEY_KPN_PACKAGE = "kpn_package"
 
         // Sensible defaults for MLHK local network
-        const val DEFAULT_PLEX_HOST = "http://192.168.2.25:32400"
+        const val DEFAULT_PLEX_HOST = "https://192.168.2.25:32400"
         const val DEFAULT_PLEX_TOKEN = ""
         const val DEFAULT_MONITORING_URL = "http://192.168.2.25:8080/api/status"
         const val DEFAULT_MONITORING_KEY = "mlhk-secure-key"

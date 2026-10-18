@@ -1,31 +1,36 @@
 package nl.mlhk.tvlauncher.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nl.mlhk.tvlauncher.data.AppManager
 import nl.mlhk.tvlauncher.data.ConfigManager
+import nl.mlhk.tvlauncher.data.ContinueWatchingProvider
 import nl.mlhk.tvlauncher.data.LiveTvProvider
 import nl.mlhk.tvlauncher.data.PlexClient
 import nl.mlhk.tvlauncher.data.StatusClient
 import nl.mlhk.tvlauncher.model.AppItem
+import nl.mlhk.tvlauncher.model.ContinueWatchingItem
 import nl.mlhk.tvlauncher.model.LiveTvChannel
 import nl.mlhk.tvlauncher.model.PlexMediaItem
 import nl.mlhk.tvlauncher.model.SystemHealthResponse
 import nl.mlhk.tvlauncher.ui.components.*
-import nl.mlhk.tvlauncher.ui.theme.MlhkBackground
-import nl.mlhk.tvlauncher.ui.theme.MlhkNeonCyan
-import nl.mlhk.tvlauncher.ui.theme.MlhkNeonPink
-import nl.mlhk.tvlauncher.ui.theme.MlhkNeonPurple
+import nl.mlhk.tvlauncher.ui.theme.*
 
 @Composable
 fun HomeScreen(
@@ -37,6 +42,7 @@ fun HomeScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+    val continueWatchingProvider = remember { ContinueWatchingProvider(appManager.context, appManager) }
 
     var selectedTab by remember { mutableStateOf(TopTab.START) }
     var showStatusDialog by remember { mutableStateOf(false) }
@@ -46,14 +52,17 @@ fun HomeScreen(
 
     var health by remember { mutableStateOf(SystemHealthResponse()) }
     var liveChannels by remember { mutableStateOf<List<LiveTvChannel>>(emptyList()) }
-    var continueWatchingItems by remember { mutableStateOf<List<PlexMediaItem>>(emptyList()) }
-    var recentlyAddedItems by remember { mutableStateOf<List<PlexMediaItem>>(emptyList()) }
-    var recommendedItems by remember { mutableStateOf<List<PlexMediaItem>>(emptyList()) }
-    var movieItems by remember { mutableStateOf<List<PlexMediaItem>>(emptyList()) }
-    var seriesItems by remember { mutableStateOf<List<PlexMediaItem>>(emptyList()) }
-    var apps by remember { mutableStateOf<List<AppItem>>(emptyList()) }
+    var unifiedContinueWatching by remember { mutableStateOf<List<ContinueWatchingItem>>(emptyList()) }
 
+    var plexContinueWatching by remember { mutableStateOf<List<PlexMediaItem>>(emptyList()) }
+    var plexRecentlyAdded by remember { mutableStateOf<List<PlexMediaItem>>(emptyList()) }
+    var plexRecommended by remember { mutableStateOf<List<PlexMediaItem>>(emptyList()) }
+    var plexMovies by remember { mutableStateOf<List<PlexMediaItem>>(emptyList()) }
+    var plexSeries by remember { mutableStateOf<List<PlexMediaItem>>(emptyList()) }
+
+    var apps by remember { mutableStateOf<List<AppItem>>(emptyList()) }
     var heroItem by remember { mutableStateOf<PlexMediaItem?>(null) }
+    var isPlexConfigured by remember { mutableStateOf(configManager.plexToken.isNotBlank()) }
 
     fun loadContent() {
         coroutineScope.launch {
@@ -74,26 +83,41 @@ fun HomeScreen(
                 apps = emptyList()
             }
 
-            // Fetch Plex Rows (with rich fallback previews)
-            try {
-                val cw = plexClient.getContinueWatching()
-                val ra = plexClient.getRecentlyAdded()
-                val rec = plexClient.getRecommended()
-                val mov = plexClient.getMovies()
-                val ser = plexClient.getSeries()
+            isPlexConfigured = configManager.plexToken.isNotBlank()
 
-                continueWatchingItems = cw
-                recentlyAddedItems = ra
-                recommendedItems = rec
-                movieItems = mov
-                seriesItems = ser
+            // Fetch real Plex content
+            if (isPlexConfigured) {
+                try {
+                    val cw = plexClient.getContinueWatching()
+                    val ra = plexClient.getRecentlyAdded()
+                    val rec = plexClient.getRecommended()
+                    val mov = plexClient.getMovies()
+                    val ser = plexClient.getSeries()
 
-                if (heroItem == null) {
-                    heroItem = ra.firstOrNull() ?: cw.firstOrNull() ?: rec.firstOrNull()
+                    plexContinueWatching = cw
+                    plexRecentlyAdded = ra
+                    plexRecommended = rec
+                    plexMovies = mov
+                    plexSeries = ser
+
+                    heroItem = ra.firstOrNull() ?: rec.firstOrNull() ?: cw.firstOrNull()
+                } catch (e: Exception) {
+                    // error handled
                 }
-            } catch (e: Exception) {
-                // error handled
+            } else {
+                plexContinueWatching = emptyList()
+                plexRecentlyAdded = emptyList()
+                plexRecommended = emptyList()
+                plexMovies = emptyList()
+                plexSeries = emptyList()
+                heroItem = null
             }
+
+            // Build unified Continue Watching list (combining Plex + Videoland + Netflix + Prime)
+            unifiedContinueWatching = continueWatchingProvider.buildUnifiedList(
+                plexItems = plexContinueWatching,
+                installedApps = apps
+            )
         }
     }
 
@@ -107,15 +131,15 @@ fun HomeScreen(
             delay(60_000)
             try {
                 health = statusClient.getSystemStatus()
-                liveChannels = LiveTvProvider.getChannels() // update progress
+                liveChannels = LiveTvProvider.getChannels()
             } catch (e: Exception) {
                 // ignore
             }
         }
     }
 
-    val allPlexItems = remember(continueWatchingItems, recentlyAddedItems, recommendedItems, movieItems, seriesItems) {
-        (continueWatchingItems + recentlyAddedItems + recommendedItems + movieItems + seriesItems).distinctBy { it.id }
+    val allPlexItems = remember(plexContinueWatching, plexRecentlyAdded, plexRecommended, plexMovies, plexSeries) {
+        (plexContinueWatching + plexRecentlyAdded + plexRecommended + plexMovies + plexSeries).distinctBy { it.id }
     }
 
     Box(
@@ -123,7 +147,7 @@ fun HomeScreen(
             .fillMaxSize()
             .background(MlhkBackground)
     ) {
-        // MLHK Next-Gen Ambient Aurora Background Effect (from mlhk-source.css)
+        // MLHK Next-Gen Ambient Aurora Background
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -185,11 +209,46 @@ fun HomeScreen(
                 onSettingsClick = { showSettingsDialog = true }
             )
 
-            // 2. Cinematic Hero Banner (Plex featured item)
-            HeroBanner(
-                item = heroItem,
-                onPlayClick = { item -> appManager.launchPlexMedia(item) }
-            )
+            // 2. Cinematic Hero Banner (Mainly Plex Focus)
+            if (heroItem != null) {
+                HeroBanner(
+                    item = heroItem,
+                    onPlayClick = { item -> appManager.launchPlexMedia(item) }
+                )
+            } else {
+                // Calm prompt to link Plex via PIN
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(280.dp)
+                        .padding(horizontal = 48.dp, vertical = 20.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(MlhkCardBg)
+                        .border(1.dp, MlhkCardBorderGlow, RoundedCornerShape(20.dp))
+                        .padding(28.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "KOPPEL JE PLEX MEDIA SERVER",
+                            style = Typography.labelMedium.copy(color = MlhkNeonPink, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
+                        )
+                        Text(
+                            text = "Koppel met 1-klik via Plex PIN",
+                            style = Typography.displayLarge.copy(fontSize = 32.sp, fontWeight = FontWeight.Bold)
+                        )
+                        Text(
+                            text = "Server gedetecteerd op https://192.168.2.25:32400. Koppel via PIN om je eigen films, series en recent toegevoegde content hier te tonen.",
+                            style = Typography.bodyMedium.copy(color = MlhkTextSub)
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        TvButton(
+                            text = "Nu Koppelen via Plex PIN (1-klik)",
+                            isPrimary = true,
+                            onClick = { showSettingsDialog = true }
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -202,40 +261,44 @@ fun HomeScreen(
                 }
             )
 
-            // 4. Mijn favoriete apps Row (Exact KPN DIW7022 16:9 cards)
+            // 4. Verder kijken (Unified: Plex + Videoland + Netflix + Prime)
+            if (unifiedContinueWatching.isNotEmpty()) {
+                ContinueWatchingRow(
+                    title = "Verder kijken",
+                    items = unifiedContinueWatching,
+                    onItemClick = { item ->
+                        if (item.plexItem != null) {
+                            appManager.launchPlexMedia(item.plexItem)
+                        } else {
+                            appManager.launchApp(item.sourcePackage)
+                        }
+                    }
+                )
+            }
+
+            // 5. Mijn favoriete apps Row (Exact KPN DIW7022 16:9 cards)
             AppRow(
                 title = "Mijn favoriete apps",
                 apps = apps,
                 onAppClick = { app -> appManager.launchApp(app.packageName) }
             )
 
-            // 5. Verder kijken (Plex Continue Watching with Progress Bar)
-            if (continueWatchingItems.isNotEmpty()) {
-                MediaRow(
-                    title = "Verder kijken in Plex",
-                    items = continueWatchingItems,
-                    isLandscape = true,
-                    onItemFocused = { heroItem = it },
-                    onItemClick = { item -> appManager.launchPlexMedia(item) }
-                )
-            }
-
-            // 6. Recent toegevoegd (Plex Recently Added)
-            if (recentlyAddedItems.isNotEmpty()) {
+            // 6. Recent toegevoegd in Plex (100% Plex Focus)
+            if (plexRecentlyAdded.isNotEmpty()) {
                 MediaRow(
                     title = "Recent toegevoegd in Plex",
-                    items = recentlyAddedItems,
+                    items = plexRecentlyAdded,
                     isLandscape = false,
                     onItemFocused = { heroItem = it },
                     onItemClick = { item -> appManager.launchPlexMedia(item) }
                 )
             }
 
-            // 7. Aanbevolen voor jou (Plex Recommendations)
-            if (recommendedItems.isNotEmpty()) {
+            // 7. Aanbevolen voor jou (100% Plex Focus)
+            if (plexRecommended.isNotEmpty()) {
                 MediaRow(
-                    title = "Aanbevolen films & series",
-                    items = recommendedItems,
+                    title = "Aanbevolen in Plex",
+                    items = plexRecommended,
                     isLandscape = false,
                     onItemFocused = { heroItem = it },
                     onItemClick = { item -> appManager.launchPlexMedia(item) }
@@ -243,10 +306,10 @@ fun HomeScreen(
             }
 
             // 8. Films (Plex Movies Library)
-            if (movieItems.isNotEmpty()) {
+            if (plexMovies.isNotEmpty()) {
                 MediaRow(
-                    title = "Populaire Films",
-                    items = movieItems,
+                    title = "Plex Films",
+                    items = plexMovies,
                     isLandscape = false,
                     onItemFocused = { heroItem = it },
                     onItemClick = { item -> appManager.launchPlexMedia(item) }
@@ -254,10 +317,10 @@ fun HomeScreen(
             }
 
             // 9. Series (Plex TV Series Library)
-            if (seriesItems.isNotEmpty()) {
+            if (plexSeries.isNotEmpty()) {
                 MediaRow(
-                    title = "Populaire Series",
-                    items = seriesItems,
+                    title = "Plex Series",
+                    items = plexSeries,
                     isLandscape = false,
                     onItemFocused = { heroItem = it },
                     onItemClick = { item -> appManager.launchPlexMedia(item) }
@@ -312,6 +375,7 @@ fun HomeScreen(
         if (showSettingsDialog) {
             SettingsDialog(
                 configManager = configManager,
+                plexClient = plexClient,
                 onSaveAndReload = { loadContent() },
                 onReturnToKpn = { appManager.launchKpnTv("home") },
                 onOpenHomeSettings = { appManager.openHomeSettings() },

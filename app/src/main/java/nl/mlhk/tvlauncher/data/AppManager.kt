@@ -8,7 +8,7 @@ import android.widget.Toast
 import nl.mlhk.tvlauncher.model.AppItem
 import nl.mlhk.tvlauncher.model.PlexMediaItem
 
-class AppManager(private val context: Context, private val configManager: ConfigManager) {
+class AppManager(val context: Context, private val configManager: ConfigManager) {
 
     fun getInstalledApps(): List<AppItem> {
         val pm = context.packageManager
