@@ -89,12 +89,17 @@ adb -s 192.168.2.26:5555 shell am start -n nl.mlhk.tvlauncher.debug/nl.mlhk.tvla
 
 ---
 
-### 🔄 Veilige Terugkeer naar KPN Launcher (Herstel)
-Wil je tijdelijk of permanent terug naar de originele KPN launcher? Voer uit:
+### 🔄 Veilige Terugkeer & Nood-Failback naar KPN Launcher
+
+> [!TIP]
+> ### 🛡️ De Noodknop: Homeknop Ingedrukt Houden (Failback)
+> Mocht onze launcher ooit vastlopen of wil je direct terug naar het vertrouwde KPN TV+ menu? **Houd de Home-knop (het Huisje) op de afstandsbediening 2 seconden ingedrukt**. Het systeem opent dan altijd direct de officiële KPN TV+ launcher (`com.kpn.tvlauncher`). Je zit dus nooit vast!
+
+Wil je via de computer tijdelijk of permanent terug naar de originele KPN launcher? Voer uit:
 ```bash
 adb -s 192.168.2.26:5555 shell am start -n com.kpn.tvlauncher/.MainActivity
 ```
-Of schakel de standaard launcher in Android instellingen terug naar *KPN TV+*.
+Of open de instellingen op de TV en schakel de standaard launcher terug naar *KPN TV+*.
 
 ---
 

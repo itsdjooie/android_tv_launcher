@@ -14,7 +14,8 @@ De **MLHK TV+ Launcher** is gebouwd om perfect samen te werken met de originele 
 | **Nu op TV (Tab / TV-knop)** | Schakelt direct door naar Live TV in de officiële KPN TV+ app. |
 | **CH+ / CH- (Zenderknoppen)**| Schakelt direct over naar KPN TV zenderselectie. |
 | **Terug (Back)** | Sluit openstaande pop-ups (zoals Status- of Instellingenvenster) of brengt de focus terug naar het hoofdmenu. |
-| **Home (Huisje)** | Keert altijd terug naar het MLHK TV+ startscherm. |
+| **Home (Kort indrukken)** | Keert terug naar het MLHK TV+ startscherm. |
+| **Home (Ingedrukt houden / Failback)** | 🛡️ **Nood-failback**: Opent direct de officiële KPN TV+ launcher (`com.kpn.tvlauncher`), zelfs als de launcher vastloopt! |
 | **Tandwiel / Menu** | Opent het instellingenmenu voor Plex en de Monitoring API. |
 
 ---

@@ -45,6 +45,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         when (keyCode) {
+            KeyEvent.KEYCODE_HOME -> {
+                event?.startTracking()
+                return false
+            }
             KeyEvent.KEYCODE_GUIDE, KeyEvent.KEYCODE_TV_INPUT -> {
                 if (configManager.isIptvConfigured) {
                     val intent = Intent(this, TvPlayerActivity::class.java).apply {
@@ -71,5 +75,19 @@ class MainActivity : ComponentActivity() {
             }
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyLongPress(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_HOME) {
+            try {
+                val kpnIntent = packageManager.getLaunchIntentForPackage("com.kpn.tvlauncher")
+                if (kpnIntent != null) {
+                    kpnIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(kpnIntent)
+                    return true
+                }
+            } catch (_: Exception) {}
+        }
+        return super.onKeyLongPress(keyCode, event)
     }
 }

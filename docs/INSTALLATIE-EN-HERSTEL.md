@@ -62,6 +62,11 @@ Als je tevreden bent:
 
 Je kunt op elk gewenst moment zonder gegevensverlies terugkeren:
 
+### Methode 0: Nood-failback via Afstandsbediening (Direct & Zonder PC)
+> [!TIP]
+> **Houd de Home-knop (Huisje) 2 seconden ingedrukt.**  
+> MLHK TV+ Launcher vangt `onKeyLongPress(KEYCODE_HOME)` op hardware-niveau af en lanceert onmiddellijk de officiële KPN TV+ launcher (`com.kpn.tvlauncher`). Dit werkt altijd, zelfs in geval van storingen of wanneer je direct terug wilt naar de fabrieksinterface!
+
 ### Methode A: Via het instellingenmenu op de TV
 1. Klik rechtsboven in de MLHK Launcher op het **Tandwiel**-icoon (Instellingen).
 2. Druk op de knop **"Terug naar KPN"** (start direct `com.kpn.kpnandroidtv`).
