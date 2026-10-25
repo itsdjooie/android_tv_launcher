@@ -28,6 +28,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import nl.mlhk.tvlauncher.model.AppItem
 import nl.mlhk.tvlauncher.ui.theme.*
 
@@ -145,37 +148,17 @@ private fun AppCardItem(
                 .background(if (isFocused) MlhkSurfaceHover else MlhkCardBg)
                 .border(if (isFocused) 2.dp else 1.dp, border, RoundedCornerShape(16.dp))
         ) {
-            // If app provides a 16:9 Android TV Leanback Banner, render it full size!
-            val bannerBitmap = remember(app.packageName) {
-                try {
-                    app.banner?.toBitmap(320, 180)?.asImageBitmap()
-                } catch (_: Exception) {
-                    null
-                }
-            }
-
-            if (bannerBitmap != null) {
-                Image(
-                    bitmap = bannerBitmap,
+            val appImage = app.banner ?: app.icon
+            if (appImage != null) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(appImage)
+                        .crossfade(true)
+                        .build(),
                     contentDescription = app.label,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    contentScale = if (app.banner != null) ContentScale.Crop else ContentScale.Fit,
+                    modifier = if (app.banner != null) Modifier.fillMaxSize() else Modifier.size(54.dp)
                 )
-            } else if (app.icon != null) {
-                val iconBitmap = remember(app.packageName) {
-                    try {
-                        app.icon.toBitmap(96, 96).asImageBitmap()
-                    } catch (_: Exception) {
-                        null
-                    }
-                }
-                if (iconBitmap != null) {
-                    Image(
-                        bitmap = iconBitmap,
-                        contentDescription = app.label,
-                        modifier = Modifier.size(54.dp)
-                    )
-                }
             } else {
                 Text(
                     text = app.label.take(2).uppercase(),

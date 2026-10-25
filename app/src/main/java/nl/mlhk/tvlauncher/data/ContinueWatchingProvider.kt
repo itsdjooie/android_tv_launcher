@@ -12,11 +12,10 @@ class ContinueWatchingProvider(
 ) {
 
     /**
-     * Bouwt de lijst voor 'Verder kijken' op basis van UITSLUITEND de door de gebruiker gekozen favoriete apps,
+     * Bouwt de lijst voor 'Verder kijken' op basis van UITSLUITEND de door de gebruiker gekozen favoriete streaming apps,
      * strikt chronologisch gesorteerd op wat daadwerkelijk als LAATST bekeken/geopend is.
      */
     fun buildUnifiedList(
-        plexItems: List<PlexMediaItem>,
         installedApps: List<AppItem>,
         favoritePackages: Set<String>
     ): List<ContinueWatchingItem> {
@@ -24,60 +23,7 @@ class ContinueWatchingProvider(
         val handledPackages = mutableSetOf<String>()
         val allCandidateItems = mutableListOf<ContinueWatchingItem>()
 
-        // 1. Plex: enkel als Plex een favoriete app is (maximaal 1 film en 1-2 series)
-        val plexIsFavorite = favoritePackages.contains(ConfigManager.PLEX_PACKAGE_NAME) ||
-                favoritePackages.any { it.contains("plex", ignoreCase = true) }
-
-        if (plexIsFavorite) {
-            handledPackages.add(ConfigManager.PLEX_PACKAGE_NAME)
-            val plexMovies = plexItems.filter { it.type == "movie" }.take(1)
-            val plexSeries = plexItems.filter { it.type != "movie" }.take(2)
-
-            val basePlexUsageTime = configManager.getPackageLastUsedTime(ConfigManager.PLEX_PACKAGE_NAME)
-
-            fun toCwItem(p: PlexMediaItem, index: Int): ContinueWatchingItem {
-                val progressPercent = if (p.durationMs != null && p.viewOffsetMs != null && p.durationMs > 0) {
-                    p.viewOffsetMs.toFloat() / p.durationMs.toFloat()
-                } else {
-                    p.progress
-                }
-                val remainingMin = if (p.durationMs != null && p.viewOffsetMs != null) {
-                    ((p.durationMs - p.viewOffsetMs) / 60000).coerceAtLeast(1)
-                } else null
-
-                val itemTimestamp = if (p.lastViewedAt != null && p.lastViewedAt > 0) {
-                    p.lastViewedAt * 1000L
-                } else {
-                    basePlexUsageTime - (index * 60_000L)
-                }
-
-                val plexApp = appMap[ConfigManager.PLEX_PACKAGE_NAME]
-                return ContinueWatchingItem(
-                    id = "plex_${p.id}",
-                    title = p.title,
-                    subtitle = p.displaySubtitle,
-                    imageUrl = p.artUrl ?: p.thumbUrl,
-                    sourceName = "Plex",
-                    sourcePackage = ConfigManager.PLEX_PACKAGE_NAME,
-                    progress = progressPercent,
-                    remainingTime = if (remainingMin != null) "Nog ${remainingMin}m" else "Hervatten",
-                    plexItem = p,
-                    lastViewedTimestamp = itemTimestamp,
-                    appBanner = plexApp?.banner,
-                    appIcon = plexApp?.icon
-                )
-            }
-
-            var pIdx = 0
-            for (movie in plexMovies) {
-                allCandidateItems.add(toCwItem(movie, pIdx++))
-            }
-            for (series in plexSeries) {
-                allCandidateItems.add(toCwItem(series, pIdx++))
-            }
-        }
-
-        // 2. Overige favoriete diensten (maximaal 1-2 per dienst, ALLEEN als favoriet én geïnstalleerd)
+        // 1. Favoriete streamingdiensten (maximaal 1-2 per dienst, ALLEEN als favoriet én geïnstalleerd)
         
         // Videoland (max 2)
         val videolandPkg = "nl.rtl.videoland.v2"
@@ -231,16 +177,23 @@ class ContinueWatchingProvider(
             )
         }
 
-        // YouTube (max 1)
+        // YouTube (max 1) - Toont direct de officiële TV-banner van YouTube zelf (NOOIT een stock foto / Netflix logo!)
         val ytPackages = listOf(
             "com.google.android.youtube.tv",
+            "com.google.android.youtube",
+            "com.liskovsoft.smarttubetv.beta",
+            "com.liskovsoft.videomanager",
+            "com.teamsmart.videomanager.tv",
             "app.revanced.android.youtube",
             "app.rvx.android.youtube",
             "app.morphe.android.youtube"
         )
         val favoritedYt = ytPackages.firstOrNull { favoritePackages.contains(it) && appMap.containsKey(it) }
+            ?: favoritePackages.firstOrNull { (it.contains("youtube", ignoreCase = true) || it.contains("smarttube", ignoreCase = true)) && appMap.containsKey(it) }
+
         if (favoritedYt != null) {
             ytPackages.forEach { handledPackages.add(it) }
+            handledPackages.add(favoritedYt)
             val ytApp = appMap[favoritedYt]
             val ytTime = configManager.getPackageLastUsedTime(favoritedYt)
             allCandidateItems.add(
@@ -248,7 +201,7 @@ class ContinueWatchingProvider(
                     id = "youtube_continue",
                     title = "YouTube",
                     subtitle = "Aanbevolen video's hervatten",
-                    imageUrl = "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=780&auto=format&fit=crop&q=80",
+                    imageUrl = null, // Authentieke officiële YouTube Leanback TV-banner/icoon
                     sourceName = "YouTube",
                     sourcePackage = favoritedYt,
                     progress = 0.50f,

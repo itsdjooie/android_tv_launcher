@@ -105,7 +105,7 @@ fun MediaCard(
                             .padding(horizontal = 5.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "★ ${String.format("%.1f", item.rating)}",
+                            text = "★ ${String.format(java.util.Locale.US, "%.1f", item.rating)}",
                             style = Typography.bodySmall.copy(
                                 color = StatusOrange,
                                 fontSize = 10.sp,

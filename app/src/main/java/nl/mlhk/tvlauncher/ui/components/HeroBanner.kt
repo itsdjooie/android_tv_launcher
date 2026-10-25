@@ -42,11 +42,13 @@ fun HeroBanner(
     val currentItem = highlights.getOrNull(validIndex)
 
     // Automatische rustige rotatie door de 3-5 highlights (elke 9 seconden)
-    LaunchedEffect(highlights.size) {
+    LaunchedEffect(highlights) {
         if (highlights.size > 1) {
             while (true) {
                 delay(9000)
-                currentIndex = (currentIndex + 1) % highlights.size
+                if (highlights.isNotEmpty()) {
+                    currentIndex = (currentIndex + 1) % highlights.size
+                }
             }
         }
     }

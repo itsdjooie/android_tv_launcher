@@ -33,37 +33,12 @@ class PlexClient(
 
     init {
         if (!isInitializedFromDisk) {
-            cachedContinueWatching = mediaCacheManager.loadItems("continue_watching")
             cachedRecentlyAdded = mediaCacheManager.loadItems("recently_added")
-            cachedRecommended = mediaCacheManager.loadItems("recommended")
-            cachedMovies = mediaCacheManager.loadItems("movies")
-            cachedSeries = mediaCacheManager.loadItems("series")
             cachedHighlights = mediaCacheManager.loadItems("highlights").ifEmpty {
-                cachedRecentlyAdded.take(5).ifEmpty { cachedRecommended.take(5) }
+                cachedRecentlyAdded.take(5)
             }
             isInitializedFromDisk = true
         }
-    }
-
-    suspend fun getContinueWatching(): List<PlexMediaItem> = withContext(Dispatchers.IO) {
-        val host = configManager.plexHost
-        val token = configManager.plexToken
-
-        if (host.isBlank() || token.isBlank()) return@withContext cachedContinueWatching
-
-        val endpoints = listOf(
-            "/hubs/continueWatching?X-Plex-Container-Start=0&X-Plex-Container-Size=10",
-            "/library/onDeck?X-Plex-Container-Start=0&X-Plex-Container-Size=10"
-        )
-        for (endpoint in endpoints) {
-            val items = fetchItemsFromEndpoint(host, token, endpoint)
-            if (items.isNotEmpty()) {
-                cachedContinueWatching = items
-                mediaCacheManager.saveItems("continue_watching", items)
-                return@withContext items
-            }
-        }
-        cachedContinueWatching
     }
 
     suspend fun getRecentlyAdded(): List<PlexMediaItem> = withContext(Dispatchers.IO) {
@@ -92,57 +67,9 @@ class PlexClient(
         cachedRecentlyAdded
     }
 
-    suspend fun getRecommended(): List<PlexMediaItem> = withContext(Dispatchers.IO) {
-        val host = configManager.plexHost
-        val token = configManager.plexToken
-
-        if (host.isBlank() || token.isBlank()) return@withContext cachedRecommended
-
-        val items = fetchItemsFromEndpoint(host, token, "/hubs/promoted?X-Plex-Container-Start=0&X-Plex-Container-Size=20")
-        if (items.isNotEmpty()) {
-            cachedRecommended = items
-            mediaCacheManager.saveItems("recommended", items)
-            return@withContext items
-        }
-        val all = fetchItemsFromEndpoint(host, token, "/library/all?X-Plex-Container-Start=0&X-Plex-Container-Size=20")
-        if (all.isNotEmpty()) {
-            cachedRecommended = all
-            mediaCacheManager.saveItems("recommended", all)
-        }
-        cachedRecommended
-    }
-
-    suspend fun getMovies(): List<PlexMediaItem> = withContext(Dispatchers.IO) {
-        val host = configManager.plexHost
-        val token = configManager.plexToken
-        if (host.isBlank() || token.isBlank()) return@withContext cachedMovies
-        val items = fetchItemsFromEndpoint(host, token, "/library/sections/1/all?X-Plex-Container-Start=0&X-Plex-Container-Size=20")
-        if (items.isNotEmpty()) {
-            cachedMovies = items
-            mediaCacheManager.saveItems("movies", items)
-        }
-        cachedMovies
-    }
-
-    suspend fun getSeries(): List<PlexMediaItem> = withContext(Dispatchers.IO) {
-        val host = configManager.plexHost
-        val token = configManager.plexToken
-        if (host.isBlank() || token.isBlank()) return@withContext cachedSeries
-        val items = fetchItemsFromEndpoint(host, token, "/library/sections/2/all?X-Plex-Container-Start=0&X-Plex-Container-Size=20")
-        if (items.isNotEmpty()) {
-            cachedSeries = items
-            mediaCacheManager.saveItems("series", items)
-        }
-        cachedSeries
-    }
-
     companion object {
         var cachedHighlights: List<PlexMediaItem> = emptyList()
-        var cachedContinueWatching: List<PlexMediaItem> = emptyList()
         var cachedRecentlyAdded: List<PlexMediaItem> = emptyList()
-        var cachedRecommended: List<PlexMediaItem> = emptyList()
-        var cachedMovies: List<PlexMediaItem> = emptyList()
-        var cachedSeries: List<PlexMediaItem> = emptyList()
         var isInitializedFromDisk = false
     }
 
@@ -247,37 +174,39 @@ class PlexClient(
     }
 
     private fun parseItem(obj: JsonObject, host: String, token: String): PlexMediaItem? {
-        val ratingKey = obj.get("ratingKey")?.asString ?: return null
-        val title = obj.get("title")?.asString ?: return null
-        val key = obj.get("key")?.asString ?: "/library/metadata/$ratingKey"
-        val type = obj.get("type")?.asString ?: "movie"
+        val ratingKey = obj.getStringOrNull("ratingKey") ?: return null
+        val title = obj.getStringOrNull("title") ?: return null
+        val key = obj.getStringOrNull("key") ?: "/library/metadata/$ratingKey"
+        val type = obj.getStringOrNull("type") ?: "movie"
 
-        val rawThumb = obj.get("thumb")?.asString
-        val rawArt = obj.get("art")?.asString
+        val rawThumb = obj.getStringOrNull("thumb")
+        val rawArt = obj.getStringOrNull("art")
 
         val thumbUrl = formatImageUrl(rawThumb, host, token)
         val artUrl = formatImageUrl(rawArt, host, token)
 
-        val year = obj.get("year")?.asInt
-        val summary = obj.get("summary")?.asString
-        val duration = obj.get("duration")?.asLong
-        val viewOffset = obj.get("viewOffset")?.asLong
+        val year = obj.getIntOrNull("year")
+        val summary = obj.getStringOrNull("summary")
+        val duration = obj.getLongOrNull("duration")
+        val viewOffset = obj.getLongOrNull("viewOffset")
 
-        val showTitle = obj.get("grandparentTitle")?.asString
-        val seasonNum = obj.get("parentIndex")?.asInt
-        val episodeNum = obj.get("index")?.asInt
-        val rating = obj.get("rating")?.asFloat
+        val showTitle = obj.getStringOrNull("grandparentTitle")
+        val seasonNum = obj.getIntOrNull("parentIndex")
+        val episodeNum = obj.getIntOrNull("index")
+        val rating = obj.getFloatOrNull("rating")
 
         val genres = mutableListOf<String>()
-        obj.getAsJsonArray("Genre")?.forEach {
-            if (it.isJsonObject) {
-                it.asJsonObject.get("tag")?.asString?.let { tag -> genres.add(tag) }
+        runCatching {
+            obj.getAsJsonArray("Genre")?.forEach {
+                if (it.isJsonObject) {
+                    it.asJsonObject.getStringOrNull("tag")?.let { tag -> genres.add(tag) }
+                }
             }
         }
 
-        val lastViewed = obj.get("lastViewedAt")?.asLong
-            ?: obj.get("viewedAt")?.asLong
-            ?: obj.get("updatedAt")?.asLong
+        val lastViewed = obj.getLongOrNull("lastViewedAt")
+            ?: obj.getLongOrNull("viewedAt")
+            ?: obj.getLongOrNull("updatedAt")
 
         return PlexMediaItem(
             id = ratingKey,
@@ -298,6 +227,22 @@ class PlexClient(
             genres = genres,
             lastViewedAt = lastViewed
         )
+    }
+
+    private fun JsonObject.getStringOrNull(key: String): String? {
+        return get(key)?.takeIf { !it.isJsonNull }?.runCatching { asString }?.getOrNull()
+    }
+
+    private fun JsonObject.getIntOrNull(key: String): Int? {
+        return get(key)?.takeIf { !it.isJsonNull }?.runCatching { asInt }?.getOrNull()
+    }
+
+    private fun JsonObject.getLongOrNull(key: String): Long? {
+        return get(key)?.takeIf { !it.isJsonNull }?.runCatching { asLong }?.getOrNull()
+    }
+
+    private fun JsonObject.getFloatOrNull(key: String): Float? {
+        return get(key)?.takeIf { !it.isJsonNull }?.runCatching { asFloat }?.getOrNull()
     }
 
     private fun formatImageUrl(rawPath: String?, host: String, token: String): String? {

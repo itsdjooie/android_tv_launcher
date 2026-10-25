@@ -61,11 +61,7 @@ fun HomeScreen(
     var liveChannels by remember { mutableStateOf<List<LiveTvChannel>>(emptyList()) }
     var unifiedContinueWatching by remember { mutableStateOf<List<ContinueWatchingItem>>(emptyList()) }
 
-    var plexContinueWatching by remember { mutableStateOf<List<PlexMediaItem>>(PlexClient.cachedContinueWatching) }
     var plexRecentlyAdded by remember { mutableStateOf<List<PlexMediaItem>>(PlexClient.cachedRecentlyAdded) }
-    var plexRecommended by remember { mutableStateOf<List<PlexMediaItem>>(PlexClient.cachedRecommended) }
-    var plexMovies by remember { mutableStateOf<List<PlexMediaItem>>(PlexClient.cachedMovies) }
-    var plexSeries by remember { mutableStateOf<List<PlexMediaItem>>(PlexClient.cachedSeries) }
 
     var allApps by remember { mutableStateOf<List<AppItem>>(emptyList()) }
     var favoriteApps by remember { mutableStateOf<List<AppItem>>(emptyList()) }
@@ -87,6 +83,13 @@ fun HomeScreen(
         } catch (_: Exception) {}
     }
 
+    // 0ms in-memory verversing bij app-klik zonder netwerkvertraging!
+    fun refreshRecentApps() {
+        favoriteApps = appManager.getFavoriteApps(allApps)
+        recentApps = appManager.getRecentApps(allApps)
+        unifiedContinueWatching = continueWatchingProvider.buildUnifiedList(allApps, configManager.favoritePackages)
+    }
+
     fun loadContent() {
         // FASE 1: INTERFACE METEEN LADEN (0ms, direct met persistente schijf-cache)
         isIptvConfigured = configManager.isIptvConfigured
@@ -99,80 +102,48 @@ fun HomeScreen(
 
         val favPackages = configManager.favoritePackages
 
-        // Haal direct de schijf-cache op voor highlights en media
+        // Haal direct de schijf-cache op voor highlights en recent toegevoegd
         if (PlexClient.cachedHighlights.isNotEmpty()) {
             highlightItems = PlexClient.cachedHighlights
-        }
-        if (PlexClient.cachedContinueWatching.isNotEmpty()) {
-            plexContinueWatching = PlexClient.cachedContinueWatching
         }
         if (PlexClient.cachedRecentlyAdded.isNotEmpty()) {
             plexRecentlyAdded = PlexClient.cachedRecentlyAdded
         }
-        if (PlexClient.cachedRecommended.isNotEmpty()) {
-            plexRecommended = PlexClient.cachedRecommended
-        }
-        if (PlexClient.cachedMovies.isNotEmpty()) {
-            plexMovies = PlexClient.cachedMovies
-        }
-        if (PlexClient.cachedSeries.isNotEmpty()) {
-            plexSeries = PlexClient.cachedSeries
-        }
 
-        unifiedContinueWatching = continueWatchingProvider.buildUnifiedList(plexContinueWatching, apps, favPackages)
+        unifiedContinueWatching = continueWatchingProvider.buildUnifiedList(apps, favPackages)
 
-        // FASE 2: VERSE INFO ASYNCHROON OP ACHTERGROND OPHALEN
+        // FASE 2: VERSE INFO ASYNCHROON OP ACHTERGROND OPHALEN (Alleen recent toegevoegd, 1 enkel licht verzoek!)
         coroutineScope.launch(Dispatchers.IO) {
-            // A. Plex media info in parallel
             if (isPlexConfigured) {
                 try {
-                    val cwDeferred = async { plexClient.getContinueWatching() }
-                    val raDeferred = async { plexClient.getRecentlyAdded() }
-
-                    val cw = cwDeferred.await()
-                    val ra = raDeferred.await()
-
+                    val ra = plexClient.getRecentlyAdded()
                     withContext(Dispatchers.Main) {
-                        plexContinueWatching = cw
                         plexRecentlyAdded = ra
-                        val highlights = ra.take(5).ifEmpty { cw.take(5) }
+                        val highlights = ra.take(5)
                         if (highlights.isNotEmpty()) {
                             highlightItems = highlights
                         }
-                        unifiedContinueWatching = continueWatchingProvider.buildUnifiedList(cw, allApps, configManager.favoritePackages)
-                    }
-
-                    // Korte pauze om CPU/GPU van de tv-box te ontlasten
-                    delay(300)
-
-                    val recDeferred = async { plexClient.getRecommended() }
-                    val movDeferred = async { plexClient.getMovies() }
-                    val serDeferred = async { plexClient.getSeries() }
-
-                    val rec = recDeferred.await()
-                    val mov = movDeferred.await()
-                    val ser = serDeferred.await()
-
-                    withContext(Dispatchers.Main) {
-                        plexRecommended = rec
-                        plexMovies = mov
-                        plexSeries = ser
                     }
                 } catch (_: Exception) {}
             }
 
-            // B. IPTV & Monitoring rustig in de achtergrond
+            // IPTV & Monitoring rustig in de achtergrond
             try {
-                delay(350)
-                val channels = LiveTvProvider.getChannels(configManager)
-                val sysHealth = try {
-                    statusClient.getSystemStatus()
-                } catch (_: Exception) {
-                    SystemHealthResponse(status = "grey", message = "Monitoring offline")
+                if (isIptvConfigured) {
+                    val channels = LiveTvProvider.getChannels(configManager)
+                    withContext(Dispatchers.Main) {
+                        liveChannels = channels
+                    }
                 }
-                withContext(Dispatchers.Main) {
-                    liveChannels = channels
-                    health = sysHealth
+                if (configManager.monitoringApiUrl.isNotBlank()) {
+                    val sysHealth = try {
+                        statusClient.getSystemStatus()
+                    } catch (_: Exception) {
+                        SystemHealthResponse(status = "grey", message = "Monitoring offline")
+                    }
+                    withContext(Dispatchers.Main) {
+                        health = sysHealth
+                    }
                 }
             } catch (_: Exception) {}
         }
@@ -192,9 +163,15 @@ fun HomeScreen(
         }
     }
 
-    val allPlexItems = remember(plexContinueWatching, plexRecentlyAdded, plexRecommended, plexMovies, plexSeries) {
-        (plexContinueWatching + plexRecentlyAdded + plexRecommended + plexMovies + plexSeries).distinctBy { it.id }
-    }
+    val allPlexItems = remember(plexRecentlyAdded) { plexRecentlyAdded }
+
+    val liveTvRowActive = isIptvConfigured && liveChannels.isNotEmpty()
+    val cwRowActive = unifiedContinueWatching.isNotEmpty()
+    val recentAppsRowActive = recentApps.isNotEmpty()
+
+    // Dynamische exacte indexen voor navigatie tabs
+    val appsRowIndex = 2 + (if (liveTvRowActive) 1 else 0) + (if (cwRowActive) 1 else 0)
+    val plexRecentRowIndex = appsRowIndex + 1 + (if (recentAppsRowActive) 1 else 0)
 
     // 1-Pass Ultra-efficiënte OLED Dark Background
     Box(
@@ -237,10 +214,10 @@ fun HomeScreen(
                                 }
                             }
                             TopTab.MOVIES_SERIES -> {
-                                coroutineScope.launch { listState.animateScrollToItem(4) }
+                                coroutineScope.launch { listState.animateScrollToItem(plexRecentRowIndex.coerceAtLeast(0)) }
                             }
                             TopTab.APPS -> {
-                                coroutineScope.launch { listState.animateScrollToItem(3) }
+                                coroutineScope.launch { listState.animateScrollToItem(appsRowIndex.coerceAtLeast(0)) }
                             }
                         }
                     },
@@ -318,7 +295,7 @@ fun HomeScreen(
                                 appManager.launchPlexMedia(item.plexItem)
                             } else {
                                 appManager.launchApp(item.sourcePackage)
-                                loadContent()
+                                refreshRecentApps()
                             }
                         }
                     )
@@ -332,7 +309,7 @@ fun HomeScreen(
                     apps = favoriteApps,
                     onAppClick = { app ->
                         appManager.launchApp(app.packageName)
-                        loadContent()
+                        refreshRecentApps()
                     },
                     onManageFavorites = { showFavoritesDialog = true }
                 )
@@ -346,54 +323,18 @@ fun HomeScreen(
                         apps = recentApps,
                         onAppClick = { app ->
                             appManager.launchApp(app.packageName)
-                            loadContent()
+                            refreshRecentApps()
                         }
                     )
                 }
             }
 
-            // 7. Recent toegevoegd in Plex
+            // 7. Recent toegevoegd in Plex (ENIGE Plex bibliotheek-rij op het startscherm!)
             if (plexRecentlyAdded.isNotEmpty()) {
                 item(key = "plexRecentlyAdded") {
                     MediaRow(
                         title = "Recent toegevoegd in Plex",
                         items = plexRecentlyAdded,
-                        isLandscape = false,
-                        onItemClick = { item -> appManager.launchPlexMedia(item) }
-                    )
-                }
-            }
-
-            // 8. Aanbevolen in Plex
-            if (plexRecommended.isNotEmpty()) {
-                item(key = "plexRecommended") {
-                    MediaRow(
-                        title = "Aanbevolen in Plex",
-                        items = plexRecommended,
-                        isLandscape = false,
-                        onItemClick = { item -> appManager.launchPlexMedia(item) }
-                    )
-                }
-            }
-
-            // 9. Films (Plex Movies Library)
-            if (plexMovies.isNotEmpty()) {
-                item(key = "plexMovies") {
-                    MediaRow(
-                        title = "Plex Films",
-                        items = plexMovies,
-                        isLandscape = false,
-                        onItemClick = { item -> appManager.launchPlexMedia(item) }
-                    )
-                }
-            }
-
-            // 10. Series (Plex TV Series Library)
-            if (plexSeries.isNotEmpty()) {
-                item(key = "plexSeries") {
-                    MediaRow(
-                        title = "Plex Series",
-                        items = plexSeries,
                         isLandscape = false,
                         onItemClick = { item -> appManager.launchPlexMedia(item) }
                     )
@@ -425,7 +366,7 @@ fun HomeScreen(
                 onSelectApp = { app ->
                     showSearchDialog = false
                     appManager.launchApp(app.packageName)
-                    loadContent()
+                    refreshRecentApps()
                 },
                 onDismiss = { showSearchDialog = false }
             )
