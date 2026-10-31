@@ -42,6 +42,7 @@ fun SettingsDialog(
 
     var plexHost by remember { mutableStateOf(configManager.plexHost) }
     var plexToken by remember { mutableStateOf(configManager.plexToken) }
+    var roomName by remember { mutableStateOf(configManager.roomName) }
     var monitoringUrl by remember { mutableStateOf(configManager.monitoringApiUrl) }
     var monitoringKey by remember { mutableStateOf(configManager.monitoringApiKey) }
 
@@ -341,6 +342,20 @@ fun SettingsDialog(
                     style = Typography.titleMedium.copy(color = MlhkNeonPink, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 )
 
+                OutlinedTextField(
+                    value = roomName,
+                    onValueChange = { roomName = it },
+                    label = { Text("Kamer / Apparaatnaam (bijv. Woonkamer)") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MlhkTextMain,
+                        unfocusedTextColor = MlhkTextSub,
+                        focusedBorderColor = MlhkNeonPink,
+                        unfocusedBorderColor = MlhkCardBorder
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     TvButton(
                         text = "Favoriete Apps Kiezen",
@@ -407,6 +422,7 @@ fun SettingsDialog(
                             isPollingPin = false
                             configManager.plexHost = plexHost
                             configManager.plexToken = plexToken
+                            configManager.roomName = roomName
                             configManager.monitoringApiUrl = monitoringUrl
                             configManager.monitoringApiKey = monitoringKey
 

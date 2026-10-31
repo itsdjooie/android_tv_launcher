@@ -2,9 +2,15 @@ package nl.mlhk.tvlauncher.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import nl.mlhk.tvlauncher.BuildConfig
 
 class ConfigManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    // --- ROOM / DEVICE CONFIG ---
+    var roomName: String
+        get() = prefs.getString(KEY_ROOM_NAME, BuildConfig.DEFAULT_ROOM_NAME) ?: BuildConfig.DEFAULT_ROOM_NAME
+        set(value) = prefs.edit().putString(KEY_ROOM_NAME, value.trim()).apply()
 
     // --- PLEX CONFIG ---
     var plexHost: String
@@ -120,6 +126,7 @@ class ConfigManager(context: Context) {
     companion object {
         private const val PREFS_NAME = "mlhk_launcher_config"
 
+        private const val KEY_ROOM_NAME = "room_name"
         private const val KEY_PLEX_HOST = "plex_host"
         private const val KEY_PLEX_TOKEN = "plex_token"
         private const val KEY_MONITORING_URL = "monitoring_url"

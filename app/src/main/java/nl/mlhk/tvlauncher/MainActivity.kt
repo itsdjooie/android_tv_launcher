@@ -79,14 +79,21 @@ class MainActivity : ComponentActivity() {
 
     override fun onKeyLongPress(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_HOME) {
-            try {
-                val kpnIntent = packageManager.getLaunchIntentForPackage("com.kpn.tvlauncher")
-                if (kpnIntent != null) {
-                    kpnIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    startActivity(kpnIntent)
-                    return true
-                }
-            } catch (_: Exception) {}
+            val fallbackLaunchers = listOf(
+                "com.google.android.apps.tv.launcherx", // Google TV (Chromecast with Google TV)
+                "com.kpn.tvlauncher",                  // KPN TV+ Box (Sagemcom DIW7022)
+                "com.google.android.tvlauncher"         // Android TV Leanback
+            )
+            for (pkg in fallbackLaunchers) {
+                try {
+                    val fallbackIntent = packageManager.getLaunchIntentForPackage(pkg)
+                    if (fallbackIntent != null) {
+                        fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(fallbackIntent)
+                        return true
+                    }
+                } catch (_: Exception) {}
+            }
         }
         return super.onKeyLongPress(keyCode, event)
     }

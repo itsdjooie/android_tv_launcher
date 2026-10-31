@@ -1,11 +1,15 @@
 # MLHK TV+ Launcher — Next-Gen Android TV Launcher
 
-[![Platform](https://img.shields.io/badge/Platform-Android%20TV%2011%2B-blue.svg)](https://developer.android.com/tv)
-[![Device](https://img.shields.io/badge/Optimized%20For-KPN%20TV%2B%20(DIW7022)-purple.svg)](https://kpn.com)
+[![Platform](https://img.shields.io/badge/Platform-Android%20TV%2011%2B%20%2F%20Google%20TV-blue.svg)](https://developer.android.com/tv)
+[![Device](https://img.shields.io/badge/Optimized%20For-KPN%20TV%2B%20%26%20Chromecast-purple.svg)](https://kpn.com)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20for%20TV-green.svg)](https://developer.android.com/jetpack/compose/tv)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)](LICENSE)
 
-Een razendsnelle, moderne en aanpasbare Android TV-launcher speciaal geoptimaliseerd voor de **KPN TV+ Box (Sagemcom DIW7022)** en andere Android TV-apparaten. 
+Een razendsnelle, moderne en aanpasbare Android TV-launcher speciaal geoptimaliseerd voor zowel de **KPN TV+ Box (Sagemcom DIW7022)** als de **Chromecast with Google TV (Woonkamer)** en andere Android TV-apparaten. 
+
+### 📱 Beschikbare Versies & APK's (in `dist/`):
+- 📺 **KPN TV+ Editie**: `dist/mlhk-tvplus-launcher.apk` (`nl.mlhk.tvlauncher.debug`)
+- 📺 **Chromecast Woonkamer Editie**: `dist/mlhk-tvplus-chromecast-woonkamer.apk` (`nl.mlhk.tvlauncher.chromecast.debug`) met "Woonkamer" badge en Google TV integratie.
 
 Ontworpen voor **0ms opstarttijd**, **0% idle CPU**, naadloze **Plex-integratie**, multi-app **Verder kijken** (Videoland, Prime Video, YouTube, Spotify, NPO Start, VTM GO, etc.) en optionele **Live TV / IPTV** streaming.
 
@@ -62,18 +66,29 @@ adb devices
 ---
 
 ### Stap 3: Launcher installeren
-Installeer de APK met het `-r` vlaggetje (zodat al je favorieten en instellingen altijd behouden blijven):
 
+**Voor KPN TV+ Box:**
 ```bash
 adb -s 192.168.2.26:5555 install -r dist/mlhk-tvplus-launcher.apk
 ```
+Of via PowerShell: `.\scripts\deploy-adb.ps1 -DeviceIp 192.168.2.26`
+
+**Voor Chromecast with Google TV (Woonkamer):**
+```bash
+adb -s <chromecast-ip>:5555 install -r dist/mlhk-tvplus-chromecast-woonkamer.apk
+```
+Of via PowerShell: `.\scripts\deploy-chromecast.ps1 -DeviceIp <chromecast-ip> -SetAsDefault` (zie [Chromecast Installatiehandleiding](docs/CHROMECAST-INSTALLATIE.md)).
 
 ---
 
 ### Stap 4: Launcher starten en instellen
 Start de launcher direct op je TV:
 ```bash
+# KPN TV+:
 adb -s 192.168.2.26:5555 shell am start -n nl.mlhk.tvlauncher.debug/nl.mlhk.tvlauncher.MainActivity
+
+# Chromecast Woonkamer:
+adb -s <chromecast-ip>:5555 shell am start -n nl.mlhk.tvlauncher.chromecast.debug/nl.mlhk.tvlauncher.MainActivity
 ```
 
 **Als standaard startscherm instellen:**
@@ -89,17 +104,23 @@ adb -s 192.168.2.26:5555 shell am start -n nl.mlhk.tvlauncher.debug/nl.mlhk.tvla
 
 ---
 
-### 🔄 Veilige Terugkeer & Nood-Failback naar KPN Launcher
+### 🔄 Veilige Terugkeer & Nood-Failback naar Fabrieksomgeving
 
 > [!TIP]
-> ### 🛡️ De Noodknop: Homeknop Ingedrukt Houden (Failback)
-> Mocht onze launcher ooit vastlopen of wil je direct terug naar het vertrouwde KPN TV+ menu? **Houd de Home-knop (het Huisje) op de afstandsbediening 2 seconden ingedrukt**. Het systeem opent dan altijd direct de officiële KPN TV+ launcher (`com.kpn.tvlauncher`). Je zit dus nooit vast!
+> ### 🛡️ De Universele Noodknop: Homeknop Ingedrukt Houden (Failback)
+> Mocht onze launcher ooit vastlopen of wil je direct terug naar het vertrouwde menu? **Houd de Home-knop (het Huisje) op de afstandsbediening 2 seconden ingedrukt**.
+> - Op de **Chromecast with Google TV**: start direct de officiële **Google TV launcher** (`com.google.android.apps.tv.launcherx`).
+> - Op de **KPN TV+ Box**: start direct de officiële **KPN TV+ launcher** (`com.kpn.tvlauncher`).
+> Je zit dus op geen enkel apparaat ooit vast!
 
-Wil je via de computer tijdelijk of permanent terug naar de originele KPN launcher? Voer uit:
+Wil je via de computer terugkeren naar de fabrieksinterface?
 ```bash
-adb -s 192.168.2.26:5555 shell am start -n com.kpn.tvlauncher/.MainActivity
+# KPN TV+:
+.\scripts\restore-kpn.ps1 -DeviceIp 192.168.2.26
+
+# Chromecast with Google TV:
+.\scripts\restore-chromecast.ps1 -DeviceIp <chromecast-ip>
 ```
-Of open de instellingen op de TV en schakel de standaard launcher terug naar *KPN TV+*.
 
 ---
 

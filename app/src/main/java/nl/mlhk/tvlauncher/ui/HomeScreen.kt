@@ -224,7 +224,8 @@ fun HomeScreen(
                     onSearchClick = { showSearchDialog = true },
                     health = health,
                     onStatusClick = { showStatusDialog = true },
-                    onSettingsClick = { showSettingsDialog = true }
+                    onSettingsClick = { showSettingsDialog = true },
+                    roomName = configManager.roomName
                 )
             }
 

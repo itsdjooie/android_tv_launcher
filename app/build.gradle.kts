@@ -20,6 +20,23 @@ android {
         }
     }
 
+    flavorDimensions += "target"
+    productFlavors {
+        create("kpn") {
+            dimension = "target"
+            buildConfigField("String", "TARGET_DEVICE", "\"kpn\"")
+            buildConfigField("String", "DEFAULT_ROOM_NAME", "\"KPN TV+\"")
+            manifestPlaceholders["appLabel"] = "MLHK TV+"
+        }
+        create("chromecast") {
+            dimension = "target"
+            applicationIdSuffix = ".chromecast"
+            buildConfigField("String", "TARGET_DEVICE", "\"chromecast\"")
+            buildConfigField("String", "DEFAULT_ROOM_NAME", "\"Woonkamer\"")
+            manifestPlaceholders["appLabel"] = "MLHK TV+ Woonkamer"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -45,6 +62,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {

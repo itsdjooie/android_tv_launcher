@@ -50,6 +50,7 @@ fun TopNavigationBar(
     health: SystemHealthResponse,
     onStatusClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    roomName: String = "",
     modifier: Modifier = Modifier
 ) {
     var currentTime by remember {
@@ -100,6 +101,12 @@ fun TopNavigationBar(
                     )
 
                     // MLHK.nl signature LIVE 2026 Badge
+                    val displayBadgeText = if (roomName.isNotBlank() && !roomName.equals("KPN TV+", ignoreCase = true)) {
+                        "2026 TV+ • ${roomName.uppercase()}"
+                    } else {
+                        "2026 TV+"
+                    }
+
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
@@ -118,7 +125,7 @@ fun TopNavigationBar(
                                     .background(MlhkNeonPink)
                             )
                             Text(
-                                text = "2026 TV+",
+                                text = displayBadgeText,
                                 style = Typography.labelSmall.copy(
                                     color = MlhkNeonCyan,
                                     fontWeight = FontWeight.Bold,
